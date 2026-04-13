@@ -21,6 +21,28 @@ function mapAppointment(row) {
   };
 }
 
+function mapDbError(error) {
+  const code = error?.code || "";
+
+  if (code === "DB_ENV_MISSING") {
+    return { status: 500, message: "Falta configurar variables de base de datos en Netlify." };
+  }
+  if (code === "ER_NO_SUCH_TABLE") {
+    return { status: 500, message: "La tabla appointments no existe. Importa el SQL en AWS RDS." };
+  }
+  if (code === "ER_ACCESS_DENIED_ERROR") {
+    return { status: 500, message: "Usuario o password de RDS incorrectos." };
+  }
+  if (code === "ETIMEDOUT" || code === "ECONNREFUSED" || code === "ENOTFOUND") {
+    return { status: 500, message: "No hay conexion a RDS. Revisa endpoint, puerto y reglas de seguridad." };
+  }
+  if (code === "ER_DUP_ENTRY") {
+    return { status: 409, message: "Ese horario ya esta ocupado. Elige otro." };
+  }
+
+  return { status: 500, message: "Error interno del servidor." };
+}
+
 async function listAppointments(pool, query) {
   if (query.date) {
     if (!isValidDate(query.date)) {
@@ -60,11 +82,9 @@ async function createAppointment(pool, payload) {
     );
     return json(201, { message: "Tu cita se registro correctamente.", id: result.insertId });
   } catch (error) {
-    if (error && error.code === "ER_DUP_ENTRY") {
-      return json(409, { message: "Ese horario ya esta ocupado. Elige otro." });
-    }
     console.error(error);
-    return json(500, { message: "No se pudo registrar la cita." });
+    const mapped = mapDbError(error);
+    return json(mapped.status, { message: mapped.message });
   }
 }
 
@@ -99,11 +119,9 @@ async function updateAppointment(pool, id, payload) {
     }
     return json(200, { message: "Cita actualizada correctamente." });
   } catch (error) {
-    if (error && error.code === "ER_DUP_ENTRY") {
-      return json(409, { message: "Ese horario ya esta ocupado por otra cita activa." });
-    }
     console.error(error);
-    return json(500, { message: "No se pudo actualizar la cita." });
+    const mapped = mapDbError(error);
+    return json(mapped.status, { message: mapped.message });
   }
 }
 
@@ -120,7 +138,15 @@ async function cancelAppointment(pool, id) {
 }
 
 exports.handler = async (event) => {
-  const pool = getPool();
+  let pool;
+  try {
+    pool = getPool();
+  } catch (error) {
+    console.error(error);
+    const mapped = mapDbError(error);
+    return json(mapped.status, { message: mapped.message });
+  }
+
   const segments = normalizePath(event.path);
   const method = event.httpMethod || "GET";
 
@@ -157,9 +183,9 @@ exports.handler = async (event) => {
     }
   } catch (error) {
     console.error(error);
-    return json(500, { message: "Error interno del servidor." });
+    const mapped = mapDbError(error);
+    return json(mapped.status, { message: mapped.message });
   }
 
   return json(405, { message: "Metodo no permitido." });
 };
-
