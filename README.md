@@ -1,49 +1,77 @@
-# Agenda de Citas MVC (PHP + MySQL)
+# Agenda de Citas en Netlify + AWS RDS
 
-Sistema de agenda web simple y profesional con dos accesos:
+Este proyecto ya quedo adaptado para desplegar en Netlify con:
 
-- Link publico para registrar citas.
-- Link administrador para ver, editar y cancelar.
+- Frontend estatico en `web/`
+- API en Netlify Functions (`netlify/functions/api.js`)
+- Base de datos MySQL en AWS RDS
+
+S3 se usa solo para respaldos, no como base de datos activa.
 
 ## Caracteristicas
 
-- Arquitectura MVC ordenada.
-- Responsive (web y celular, mobile-first).
-- Prevencion de doble reserva para el mismo horario y fecha.
-- Panel administrador de acceso libre (sin login).
-- Filtro por fecha en panel.
-- SQL completo para importar.
+- Vista publica para registrar cita: `/`
+- Panel administrador libre: `/admin.html`
+- Edicion de cita: `/admin-edit.html?id=ID`
+- Diseno responsive y agenda enfocada en celular
+- Bloqueo de citas duplicadas por fecha/hora
 
 ## Requisitos
 
-- PHP 8.1+
-- MySQL 5.7+ o MariaDB compatible
-- Apache (XAMPP recomendado)
+- Node.js 20+ (recomendado)
+- AWS RDS MySQL
+- Netlify (sitio conectado al repositorio)
 
-## Instalacion local (XAMPP)
+## Variables de entorno en Netlify
 
-1. Copia el proyecto en `c:\xampp\htdocs\agendaCitas`.
-2. Importa `database/agenda_citas.sql` en phpMyAdmin.
-3. Verifica credenciales DB en `config/config.php`.
-4. Inicia Apache y MySQL.
-5. Abre:
-   - Publico: `http://localhost/agendaCitas/public/book`
-   - Admin: `http://localhost/agendaCitas/public/admin`
+Configuralas en `Site settings > Environment variables`:
 
-## Estructura
+- `DB_HOST` = endpoint de RDS
+- `DB_PORT` = `3306`
+- `DB_NAME` = `agenda_citas`
+- `DB_USER` = usuario de RDS
+- `DB_PASSWORD` = password de RDS
 
-- `app/Core`: clases base (Router, DB, View, Session, CSRF)
-- `app/Controllers`: logica de peticiones
-- `app/Models`: acceso a datos
-- `app/Views`: interfaz
-- `public`: punto de entrada y assets
-- `database`: script SQL
+## SQL inicial
 
-## Nota de despliegue
+Importa este archivo en tu RDS:
 
-Netlify no ejecuta PHP/MySQL de forma nativa. Opciones recomendadas:
+- `database/agenda_citas.sql`
 
-1. Backend PHP + MySQL en hosting con PHP (Hostinger/cPanel/VPS/Render con Docker).
-2. Frontend estatico en Netlify y backend/API en otro servidor.
+## Ejecutar local en modo Netlify
 
-Si quieres, en el siguiente paso te lo preparo tambien en version API + frontend separado para Netlify.
+1. Instala dependencias:
+   - `npm install`
+2. Crea `.env` local con las variables DB:
+   - `DB_HOST=...`
+   - `DB_PORT=3306`
+   - `DB_NAME=agenda_citas`
+   - `DB_USER=...`
+   - `DB_PASSWORD=...`
+3. Levanta entorno local:
+   - `npx netlify dev`
+4. Abre:
+   - `http://localhost:8888/`
+
+## Despliegue en Netlify
+
+1. Conecta el repo en Netlify.
+2. Build command: vacio (o `npm run build`).
+3. Publish directory: `web`
+4. Functions directory: `netlify/functions` (ya esta en `netlify.toml`).
+5. Configura variables de entorno y despliega.
+
+## Rutas API disponibles
+
+- `GET /api/appointments?date=YYYY-MM-DD`
+- `GET /api/appointments/:id`
+- `POST /api/appointments`
+- `PUT /api/appointments/:id`
+- `POST /api/appointments/:id/cancel`
+
+## Respaldo en S3 (opcional)
+
+Ejemplo de dump y subida:
+
+1. `mysqldump -h TU_RDS -P 3306 -u TU_USER -p agenda_citas > backup.sql`
+2. `aws s3 cp backup.sql s3://TU_BUCKET/backups/backup_YYYY-MM-DD.sql`

@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel de citas | Agenda Pro</title>
+  <link rel="stylesheet" href="/assets/css/app.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar__inner">
+      <a class="brand" href="/">Agenda Pro</a>
+      <nav class="nav">
+        <a href="/">Agendar</a>
+        <a href="/admin.html">Administrador</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="dashboard-hero card card--wide">
+      <div>
+        <p class="eyebrow">Agenda movil</p>
+        <h1>Panel de citas</h1>
+        <p>Vista tipo agenda para gestionar citas de forma rapida desde telefono.</p>
+      </div>
+    </section>
+
+    <section class="card card--wide">
+      <div id="flash"></div>
+
+      <form id="filter-form" class="filters filters--agenda">
+        <label for="date">Filtrar por fecha</label>
+        <input id="date" name="date" type="date">
+        <button type="submit" class="btn btn--secondary">Filtrar</button>
+        <a class="btn btn--ghost" href="/admin.html">Limpiar</a>
+      </form>
+
+      <div id="appointments-root" class="agenda-view"></div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Agenda de Citas - Sistema Web Profesional</p>
+  </footer>
+
+  <script src="/assets/js/admin.js"></script>
+</body>
+</html>
+

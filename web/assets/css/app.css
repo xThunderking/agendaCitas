@@ -1,0 +1,601 @@
+:root {
+    --bg-1: #f2f7ff;
+    --bg-2: #dfeafe;
+    --surface: #ffffff;
+    --surface-soft: #f7fbff;
+    --ink: #12213a;
+    --muted: #4f6787;
+    --primary: #0d47c9;
+    --primary-2: #2563eb;
+    --primary-3: #60a5fa;
+    --danger: #c62828;
+    --line: #d4e1f5;
+    --shadow: 0 16px 36px rgba(18, 33, 58, 0.1);
+    --radius: 18px;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: "Poppins", "Segoe UI", "Trebuchet MS", sans-serif;
+    color: var(--ink);
+    background:
+        radial-gradient(circle at 10% 0%, #cfe0ff, transparent 40%),
+        radial-gradient(circle at 95% 100%, #d8ebff, transparent 45%),
+        linear-gradient(180deg, var(--bg-2), var(--bg-1));
+    min-height: 100vh;
+}
+
+.topbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.88);
+    border-bottom: 1px solid rgba(13, 71, 201, 0.18);
+}
+
+.topbar__inner {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 0.85rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.8rem;
+}
+
+.brand {
+    color: var(--primary);
+    font-weight: 800;
+    text-decoration: none;
+    letter-spacing: 0.2px;
+    font-size: 1.04rem;
+}
+
+.nav {
+    display: flex;
+    gap: 0.45rem;
+}
+
+.nav a {
+    text-decoration: none;
+    color: var(--ink);
+    padding: 0.48rem 0.85rem;
+    border-radius: 999px;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.nav a:hover {
+    background: #e7f0ff;
+}
+
+.page {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 1rem 0.9rem 2.4rem;
+}
+
+.hero {
+    margin-bottom: 1rem;
+}
+
+.hero__content {
+    background: linear-gradient(135deg, #f9fcff, #edf4ff);
+    position: relative;
+    overflow: hidden;
+}
+
+.hero__content::after {
+    content: "";
+    position: absolute;
+    right: -46px;
+    top: -46px;
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(37, 99, 235, 0.25), transparent 68%);
+}
+
+.hero-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+}
+
+.hero-tags span {
+    border: 1px solid #c5d8fa;
+    background: #f2f7ff;
+    color: #1f4db8;
+    border-radius: 999px;
+    padding: 0.3rem 0.62rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+h1,
+h2,
+h3 {
+    margin-top: 0;
+    line-height: 1.2;
+}
+
+h1 {
+    font-size: 1.35rem;
+}
+
+p {
+    margin-top: 0;
+    color: var(--muted);
+}
+
+.card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem;
+}
+
+.card--wide {
+    margin-bottom: 1rem;
+}
+
+.card--accent {
+    background: linear-gradient(180deg, #ffffff, var(--surface-soft));
+    border-color: #c8daf5;
+}
+
+.section-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+.section-grid--single {
+    max-width: 640px;
+    margin: 0 auto;
+}
+
+.form {
+    display: grid;
+    gap: 0.7rem;
+}
+
+label {
+    font-size: 0.92rem;
+    color: var(--muted);
+    font-weight: 600;
+}
+
+input,
+select {
+    width: 100%;
+    border: 1px solid #c7d8f0;
+    border-radius: 12px;
+    padding: 0.82rem 0.86rem;
+    font-size: 1rem;
+    background: #fff;
+    color: var(--ink);
+}
+
+input:focus,
+select:focus {
+    outline: 3px solid rgba(96, 165, 250, 0.25);
+    border-color: var(--primary-2);
+}
+
+.btn {
+    border: 0;
+    border-radius: 12px;
+    padding: 0.72rem 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.92rem;
+    min-height: 42px;
+}
+
+.btn--primary {
+    background: linear-gradient(135deg, var(--primary), var(--primary-2));
+    color: #fff;
+}
+
+.btn--secondary {
+    background: #e7f0ff;
+    color: #18408b;
+}
+
+.btn--danger {
+    background: #ffe8eb;
+    color: var(--danger);
+}
+
+.btn--ghost {
+    background: #edf3ff;
+    color: #243a67;
+}
+
+.alert {
+    border-radius: 12px;
+    padding: 0.72rem;
+    margin-bottom: 0.85rem;
+    font-weight: 600;
+}
+
+.alert--success {
+    background: #e9f1ff;
+    color: #204a95;
+    border: 1px solid #bdd3fb;
+}
+
+.alert--error {
+    background: #ffebef;
+    color: #8f1323;
+    border: 1px solid #f5c1cc;
+}
+
+.feature-list {
+    margin: 0;
+    padding-left: 1.12rem;
+    color: var(--muted);
+}
+
+.feature-list li {
+    margin-bottom: 0.48rem;
+}
+
+.steps {
+    margin-top: 1rem;
+    border-top: 1px solid #d9e6fb;
+    padding-top: 0.8rem;
+}
+
+.steps p {
+    margin: 0 0 0.4rem;
+    color: #36527d;
+    font-size: 0.92rem;
+}
+
+.dashboard-header {
+    display: flex;
+    gap: 0.8rem;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.filters {
+    margin-bottom: 1rem;
+    display: grid;
+    gap: 0.65rem;
+    grid-template-columns: 1fr;
+}
+
+.filters .btn {
+    width: 100%;
+}
+
+.dashboard-hero {
+    background: linear-gradient(145deg, #f8fbff, #eaf2ff);
+}
+
+.eyebrow {
+    margin: 0 0 0.35rem;
+    color: #2f5fb4;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.72rem;
+}
+
+.filters--agenda label {
+    margin-bottom: 0.1rem;
+}
+
+.agenda-view {
+    display: grid;
+    gap: 0.85rem;
+}
+
+.agenda-day {
+    border: 1px solid #cfe0fb;
+    border-radius: 16px;
+    overflow: hidden;
+    background: linear-gradient(180deg, #ffffff, #f9fcff);
+}
+
+.agenda-day__header {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.75rem;
+    align-items: center;
+    padding: 0.75rem;
+    background: linear-gradient(180deg, #f4f8ff, #edf4ff);
+    border-bottom: 1px solid #d8e5fb;
+}
+
+.agenda-day__date-block {
+    border-radius: 12px;
+    background: #fff;
+    border: 1px solid #c8d9f7;
+    min-width: 54px;
+    padding: 0.35rem 0.45rem;
+    text-align: center;
+    display: grid;
+    gap: 0.1rem;
+}
+
+.agenda-day__day {
+    font-size: 1.05rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.agenda-day__month {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #3e5f98;
+    text-transform: uppercase;
+}
+
+.agenda-day__meta h2 {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.agenda-day__meta p {
+    margin: 0.14rem 0 0;
+    font-size: 0.84rem;
+}
+
+.agenda-day__timeline {
+    display: grid;
+    gap: 0.65rem;
+    padding: 0.72rem;
+}
+
+.agenda-item {
+    background: #fff;
+    border: 1px solid #d6e3f7;
+    border-left-width: 5px;
+    border-radius: 13px;
+    padding: 0.72rem;
+    display: grid;
+    gap: 0.6rem;
+}
+
+.status-accent--scheduled {
+    border-left-color: #2563eb;
+}
+
+.status-accent--cancelled {
+    border-left-color: #c62828;
+}
+
+.status-accent--completed {
+    border-left-color: #1e40af;
+}
+
+.agenda-item__time {
+    display: inline-flex;
+    width: fit-content;
+    border-radius: 999px;
+    border: 1px solid #cbdcf8;
+    background: #f2f7ff;
+    color: #214593;
+    font-weight: 700;
+    padding: 0.22rem 0.6rem;
+    font-size: 0.82rem;
+}
+
+.agenda-item__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+}
+
+.agenda-item__top h3 {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.agenda-item__id {
+    margin: 0.35rem 0 0;
+    font-size: 0.83rem;
+    color: #607ca8;
+}
+
+.agenda-item__actions {
+    margin-top: 0.7rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+}
+
+.agenda-item__actions .btn,
+.agenda-item__actions .inline-form,
+.agenda-item__actions .inline-form .btn {
+    width: 100%;
+}
+
+.mobile-list {
+    display: grid;
+    gap: 0.72rem;
+}
+
+.appointment-card {
+    background: linear-gradient(180deg, #ffffff, #f7fbff);
+    border: 1px solid #d0dff7;
+    border-radius: 14px;
+    padding: 0.82rem;
+}
+
+.appointment-card--empty p {
+    margin: 0;
+}
+
+.appointment-card__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.45rem;
+}
+
+.appointment-card h3 {
+    margin: 0;
+    font-size: 1.02rem;
+}
+
+.appointment-card__meta {
+    display: grid;
+    gap: 0.3rem;
+    margin-top: 0.5rem;
+    color: var(--muted);
+    font-size: 0.92rem;
+}
+
+.appointment-card__actions {
+    margin-top: 0.72rem;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+}
+
+.inline-form {
+    margin: 0;
+}
+
+.inline-form .btn {
+    width: 100%;
+}
+
+.desktop-table {
+    display: none;
+}
+
+.table-wrap {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 680px;
+}
+
+.table th,
+.table td {
+    border-bottom: 1px solid var(--line);
+    padding: 0.7rem 0.55rem;
+    text-align: left;
+}
+
+.actions {
+    display: flex;
+    gap: 0.45rem;
+    align-items: center;
+}
+
+.status {
+    display: inline-block;
+    border-radius: 999px;
+    font-size: 0.73rem;
+    font-weight: 800;
+    padding: 0.3rem 0.62rem;
+}
+
+.status--scheduled {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.status--cancelled {
+    background: #ffe4e8;
+    color: #9b1c28;
+}
+
+.status--completed {
+    background: #dce8ff;
+    color: #1e40af;
+}
+
+.footer {
+    text-align: center;
+    color: #45608a;
+    font-size: 0.86rem;
+    padding: 1.2rem;
+}
+
+@media (min-width: 760px) {
+    h1 {
+        font-size: 1.6rem;
+    }
+
+    .page {
+        padding-top: 1.25rem;
+    }
+
+    .section-grid {
+        grid-template-columns: 1.45fr 1fr;
+        align-items: start;
+    }
+
+    .filters {
+        grid-template-columns: 1fr auto auto;
+        align-items: end;
+    }
+
+    .filters .btn {
+        width: auto;
+        min-width: 110px;
+    }
+
+    .filters--agenda {
+        grid-template-columns: 1fr auto auto;
+    }
+
+    .agenda-view {
+        gap: 1rem;
+    }
+
+    .agenda-day__timeline {
+        padding: 0.8rem;
+    }
+
+    .agenda-item {
+        grid-template-columns: auto 1fr;
+        align-items: start;
+        gap: 0.8rem;
+    }
+
+    .agenda-item__time {
+        margin-top: 0.05rem;
+    }
+
+    .agenda-item__actions {
+        grid-template-columns: auto auto;
+        justify-content: start;
+    }
+
+    .mobile-list {
+        display: none;
+    }
+
+    .desktop-table {
+        display: block;
+    }
+
+    .appointment-card__actions {
+        grid-template-columns: 1fr 1fr;
+    }
+}
