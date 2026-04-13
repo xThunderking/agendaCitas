@@ -31,6 +31,11 @@ Configuralas en `Site settings > Environment variables`:
 - `DB_NAME` = `agenda_citas`
 - `DB_USER` = usuario de RDS
 - `DB_PASSWORD` = password de RDS
+- `DB_SSL` = `false` (o `true` si tu instancia exige SSL)
+
+Tambien tienes una plantilla lista:
+
+- `.env.example`
 
 ## SQL inicial
 

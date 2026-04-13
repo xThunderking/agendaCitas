@@ -10,10 +10,14 @@ function normalizePath(path = "") {
 }
 
 function mapAppointment(row) {
+  const dateValue = row.appointment_date instanceof Date
+    ? row.appointment_date.toISOString().slice(0, 10)
+    : String(row.appointment_date || "").slice(0, 10);
+
   return {
     id: row.id,
     client_name: row.client_name,
-    appointment_date: row.appointment_date,
+    appointment_date: dateValue,
     appointment_time: String(row.appointment_time).slice(0, 5),
     status: row.status,
     created_at: row.created_at,

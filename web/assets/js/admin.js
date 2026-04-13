@@ -18,16 +18,21 @@ function showFlash(message, type = "success") {
 
 function groupByDate(items) {
   return items.reduce((acc, item) => {
-    if (!acc[item.appointment_date]) {
-      acc[item.appointment_date] = [];
+    const dateKey = String(item.appointment_date || "").slice(0, 10);
+    if (!acc[dateKey]) {
+      acc[dateKey] = [];
     }
-    acc[item.appointment_date].push(item);
+    acc[dateKey].push(item);
     return acc;
   }, {});
 }
 
 function dayHeader(date) {
-  const dt = new Date(`${date}T00:00:00`);
+  const normalized = String(date || "").slice(0, 10);
+  const dt = new Date(`${normalized}T00:00:00`);
+  if (Number.isNaN(dt.getTime())) {
+    return { weekday: "Dia", day: "--", month: "---" };
+  }
   return {
     weekday: weekday[dt.getDay()],
     day: String(dt.getDate()).padStart(2, "0"),
@@ -146,4 +151,3 @@ root?.addEventListener("click", async (event) => {
 });
 
 loadAppointments().catch((error) => showFlash(error.message, "error"));
-
