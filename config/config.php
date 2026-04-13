@@ -9,11 +9,12 @@ return [
         'timezone' => 'America/Mexico_City',
     ],
     'db' => [
-        'host' => (string) (getenv('DB_HOST') ?: '127.0.0.1'),
-        'port' => (int) (getenv('DB_PORT') ?: 3306),
-        'database' => (string) (getenv('DB_DATABASE') ?: 'agenda_citas'),
-        'username' => (string) (getenv('DB_USERNAME') ?: 'root'),
-        'password' => (string) (getenv('DB_PASSWORD') ?: ''),
+        'host' => 'agenda-citas-db.ce52g4cuedb1.us-east-1.rds.amazonaws.com',
+        'port' => 3306,
+        'database' => 'agenda_citas',
+        'username' => 'admin',
+        'password' => 'Syscomhaq23*',
         'charset' => 'utf8mb4',
     ],
+
 ];

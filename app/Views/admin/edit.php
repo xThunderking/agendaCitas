@@ -17,7 +17,7 @@
             <input id="appointment_date" name="appointment_date" type="date" required value="<?= e((string) $appointment['appointment_date']); ?>">
 
             <label for="appointment_time">Horario</label>
-            <input id="appointment_time" name="appointment_time" type="time" required step="1800" value="<?= e(substr((string) $appointment['appointment_time'], 0, 5)); ?>">
+            <input id="appointment_time" name="appointment_time" type="time" required step="60" value="<?= e(substr((string) $appointment['appointment_time'], 0, 5)); ?>">
 
             <label for="status">Estado</label>
             <select id="status" name="status" required>

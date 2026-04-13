@@ -52,7 +52,7 @@
                 name="appointment_time"
                 type="time"
                 required
-                step="1800"
+                step="60"
                 value="<?= e((string) ($old['appointment_time'] ?? '')); ?>"
             >
 
