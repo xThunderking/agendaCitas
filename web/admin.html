@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Registros de clases | Agenda Pro</title>
   <link rel="stylesheet" href="/assets/css/app.css">
-  <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css' rel='stylesheet' />
 </head>
 <body>
   <header class="topbar">
@@ -18,8 +17,8 @@
     <section class="dashboard-hero card card--wide">
       <div>
         <p class="eyebrow">Panel de registros</p>
-        <h1>Calendario Semanal de Clases</h1>
-        <p>Haz clic en un bloque para ver la lista de registrados de cada clase.</p>
+        <h1>Calendario Diario de Clases</h1>
+        <p>Cambia de dia y haz clic en la clase de las 7 o de las 9 para ver registrados.</p>
       </div>
     </section>
 
@@ -28,11 +27,21 @@
 
       <div class="admin-calendar-grid">
         <div class="admin-calendar-main">
+          <div class="day-switcher">
+            <button type="button" id="prev-day" class="btn btn--ghost">Dia anterior</button>
+            <div class="day-switcher__center">
+              <p class="day-switcher__label">Dia seleccionado</p>
+              <h2 id="selected-date">--</h2>
+            </div>
+            <button type="button" id="next-day" class="btn btn--ghost">Dia siguiente</button>
+          </div>
+
           <div class="admin-calendar-help">
-            <span class="legend legend--filled">Clase con cupo</span>
+            <span class="legend legend--filled">Con cupo</span>
             <span class="legend legend--full">Clase llena</span>
           </div>
-          <div id="calendar"></div>
+
+          <div id="daily-cards" class="daily-cards" aria-live="polite"></div>
         </div>
 
         <aside class="class-roster" id="class-roster" aria-live="polite">
@@ -49,7 +58,6 @@
     <p>Agenda de Citas - Sistema Web Profesional</p>
   </footer>
 
-  <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js'></script>
   <script src="/assets/js/admin.js"></script>
 </body>
 </html>
