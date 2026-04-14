@@ -631,6 +631,208 @@ select:focus {
     padding: 1.2rem;
 }
 
+.admin-calendar-shell {
+    background: linear-gradient(180deg, #ffffff, #f6faff);
+}
+
+.admin-calendar-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+.admin-calendar-main {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.admin-calendar-help {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+}
+
+.legend {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 0.3rem 0.7rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    border: 1px solid #d6e4fa;
+    color: #244576;
+}
+
+.legend--filled {
+    background: #e8f0ff;
+}
+
+.legend--full {
+    background: #ffe8e8;
+    border-color: #f7cdcd;
+    color: #a53030;
+}
+
+#calendar {
+    border: 1px solid #d4e2f9;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #ffffff;
+}
+
+.class-roster {
+    border: 1px solid #d8e5fb;
+    border-radius: 16px;
+    background: linear-gradient(180deg, #ffffff, #f9fcff);
+    padding: 1rem;
+}
+
+.class-roster__eyebrow {
+    margin: 0 0 0.35rem;
+    color: #2f5fb4;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.7rem;
+}
+
+.class-roster h2 {
+    margin: 0;
+    font-size: 1.15rem;
+}
+
+#roster-subtitle {
+    margin: 0.35rem 0 0.9rem;
+    font-size: 0.92rem;
+}
+
+.participants-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 0.5rem;
+    max-height: 460px;
+    overflow: auto;
+}
+
+.participants-list li {
+    display: flex;
+    align-items: center;
+    border: 1px solid #dce7fa;
+    border-radius: 12px;
+    background: #fff;
+    padding: 0.6rem 0.7rem;
+    color: #21395f;
+    font-weight: 500;
+}
+
+.participants-list__empty {
+    justify-content: center;
+    color: #5c7398;
+}
+
+.fc .fc-toolbar {
+    padding: 0.85rem;
+    margin-bottom: 0;
+    border-bottom: 1px solid #dce8fb;
+    background: linear-gradient(180deg, #f9fcff, #f3f8ff);
+}
+
+.fc .fc-toolbar-title {
+    font-size: 1rem;
+    color: #183566;
+}
+
+.fc .fc-button {
+    background: #eaf2ff;
+    border: 1px solid #c8daf7;
+    color: #20468f;
+    text-transform: capitalize;
+    font-weight: 700;
+    box-shadow: none;
+}
+
+.fc .fc-button:hover,
+.fc .fc-button:focus {
+    background: #dbeaff;
+    color: #143977;
+    border-color: #b7cff5;
+}
+
+.fc .fc-button-primary:not(:disabled).fc-button-active,
+.fc .fc-button-primary:not(:disabled):active {
+    background: #cfe1ff;
+    border-color: #adc8f7;
+    color: #173d81;
+}
+
+.fc .fc-timegrid-slot-label-cushion,
+.fc .fc-col-header-cell-cushion {
+    color: #3f5f90;
+    font-weight: 600;
+}
+
+.fc .fc-timegrid-slot,
+.fc .fc-timegrid-axis {
+    background: #ffffff;
+}
+
+.fc .fc-timegrid-slot-lane {
+    border-color: #ecf2fd;
+}
+
+.fc .fc-col-header-cell {
+    background: #f7fbff;
+    border-color: #e5edfc;
+}
+
+.fc .fc-timegrid-now-indicator-line {
+    border-color: #ff7a45;
+}
+
+.fc .fc-timegrid-now-indicator-arrow {
+    border-top-color: #ff7a45;
+    border-bottom-color: #ff7a45;
+}
+
+.fc-class-event {
+    border: 0;
+    border-radius: 10px;
+    padding: 0;
+}
+
+.fc-class-event--normal {
+    background: linear-gradient(135deg, #2c6ae8, #1f4fab);
+}
+
+.fc-class-event--high {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.fc-class-event--full {
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+}
+
+.fc-class-event__content {
+    padding: 0.52rem 0.58rem;
+}
+
+.fc-class-event__title,
+.fc-class-event__meta {
+    margin: 0;
+    color: #ffffff;
+}
+
+.fc-class-event__title {
+    font-weight: 700;
+    font-size: 0.8rem;
+}
+
+.fc-class-event__meta {
+    font-size: 0.74rem;
+    opacity: 0.95;
+}
+
 @media (min-width: 760px) {
     h1 {
         font-size: 1.6rem;
@@ -696,5 +898,10 @@ select:focus {
 
     .appointment-card__actions {
         grid-template-columns: 1fr 1fr;
+    }
+
+    .admin-calendar-grid {
+        grid-template-columns: minmax(0, 1.8fr) minmax(280px, 0.9fr);
+        align-items: start;
     }
 }

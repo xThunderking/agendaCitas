@@ -1,13 +1,16 @@
 const flash = document.getElementById("flash");
 const calendarEl = document.getElementById("calendar");
-const modal = document.getElementById("participants-modal");
-const modalTitle = document.getElementById("modal-title");
+const rosterTitle = document.getElementById("roster-title");
+const rosterSubtitle = document.getElementById("roster-subtitle");
 const participantsList = document.getElementById("participants-list");
-const closeModal = document.querySelector(".close");
 
 const classSlots = ["07:00-08:00", "09:00-10:00"];
+const slotTimeMap = {
+  "07:00-08:00": { start: "07:00:00", end: "08:00:00" },
+  "09:00-10:00": { start: "09:00:00", end: "10:00:00" }
+};
 let classCapacity = 30;
-let currentData = {}; // Para almacenar datos por fecha y slot
+let currentData = {};
 
 function showFlash(message, type = "success") {
   flash.innerHTML = `<div class="alert alert--${type}">${message}</div>`;
@@ -26,6 +29,32 @@ function fullName(person) {
   return `${person.last_name_paterno} ${person.last_name_materno} ${person.first_names}`.trim();
 }
 
+function dateKey(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function prettyDate(value) {
+  return new Date(`${value}T00:00:00`).toLocaleDateString("es-MX", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric"
+  });
+}
+
+function classStatusClass(count) {
+  if (count >= classCapacity) {
+    return "fc-class-event--full";
+  }
+  if (count >= Math.ceil(classCapacity * 0.8)) {
+    return "fc-class-event--high";
+  }
+  return "fc-class-event--normal";
+}
+
 async function loadEvents(fetchInfo, successCallback, failureCallback) {
   try {
     const start = fetchInfo.startStr;
@@ -38,7 +67,6 @@ async function loadEvents(fetchInfo, successCallback, failureCallback) {
     classCapacity = Number(result.capacity || 30);
     const data = result.data || [];
 
-    // Agrupar por fecha y slot
     currentData = {};
     data.forEach(item => {
       if (!currentData[item.class_date]) {
@@ -50,32 +78,29 @@ async function loadEvents(fetchInfo, successCallback, failureCallback) {
       currentData[item.class_date][item.class_slot].push(item);
     });
 
-    // Crear eventos para todos los slots en días de semana
     const events = [];
-    const startDate = new Date(start);
-    const endDate = new Date(end);
+    const startDate = new Date(fetchInfo.start);
+    const endDate = new Date(fetchInfo.end);
+
     for (let d = new Date(startDate); d < endDate; d.setDate(d.getDate() + 1)) {
-      const dateStr = d.toISOString().slice(0, 10);
+      const dateStr = dateKey(d);
       const day = d.getDay();
-      if (day >= 1 && day <= 5) { // Lunes a Viernes
+      if (day >= 1 && day <= 5) {
         classSlots.forEach(slot => {
           const participants = currentData[dateStr]?.[slot] || [];
           const count = participants.length;
-          let startTime, endTime;
-          if (slot === "07:00-08:00") {
-            startTime = 'T07:00:00';
-            endTime = 'T08:00:00';
-          } else if (slot === "09:00-10:00") {
-            startTime = 'T09:00:00';
-            endTime = 'T10:00:00';
-          }
+          const times = slotTimeMap[slot];
+
           events.push({
-            title: `Clase ${slot} (${count}/${classCapacity})`,
-            start: dateStr + startTime,
-            end: dateStr + endTime,
+            title: `Clase ${slot}`,
+            start: `${dateStr}T${times.start}`,
+            end: `${dateStr}T${times.end}`,
+            classNames: ["fc-class-event", classStatusClass(count)],
             extendedProps: {
               date: dateStr,
               slot: slot,
+              count: count,
+              capacity: classCapacity,
               participants: participants
             }
           });
@@ -92,39 +117,59 @@ async function loadEvents(fetchInfo, successCallback, failureCallback) {
 
 function showParticipants(date, slot) {
   const participants = currentData[date]?.[slot] || [];
-  modalTitle.textContent = `Participantes de la Clase ${slot} - ${date}`;
+  rosterTitle.textContent = `Clase ${slot}`;
+  rosterSubtitle.textContent = `${prettyDate(date)} • ${participants.length}/${classCapacity} registrados`;
+
   participantsList.innerHTML = participants.length
-    ? participants.map(p => `<li>${escapeHtml(fullName(p))}</li>`).join("")
-    : "<li>Sin participantes registrados.</li>";
-  modal.style.display = "block";
+    ? participants.map(p => `<li><span>${escapeHtml(fullName(p))}</span></li>`).join("")
+    : "<li class=\"participants-list__empty\">Sin participantes registrados.</li>";
 }
-
-closeModal.onclick = function() {
-  modal.style.display = "none";
-};
-
-window.onclick = function(event) {
-  if (event.target == modal) {
-    modal.style.display = "none";
-  }
-};
 
 document.addEventListener('DOMContentLoaded', function() {
   const calendar = new FullCalendar.Calendar(calendarEl, {
-    initialView: 'timeGridDay',
+    initialView: 'timeGridWeek',
     locale: 'es',
+    firstDay: 1,
+    weekends: false,
+    allDaySlot: false,
+    expandRows: true,
+    nowIndicator: true,
     headerToolbar: {
       left: 'prev,next today',
       center: 'title',
-      right: 'dayGridMonth,timeGridWeek,timeGridDay'
+      right: 'timeGridWeek,timeGridDay'
+    },
+    buttonText: {
+      today: 'Hoy',
+      week: 'Semana',
+      day: 'Día'
     },
     events: loadEvents,
+    eventContent: function(arg) {
+      const count = arg.event.extendedProps.count;
+      const capacity = arg.event.extendedProps.capacity;
+      return {
+        html: `
+          <div class="fc-class-event__content">
+            <p class="fc-class-event__title">${escapeHtml(arg.event.title)}</p>
+            <p class="fc-class-event__meta">${count}/${capacity} registrados</p>
+          </div>
+        `
+      };
+    },
     eventClick: function(info) {
       const props = info.event.extendedProps;
       showParticipants(props.date, props.slot);
     },
+    businessHours: {
+      daysOfWeek: [1, 2, 3, 4, 5],
+      startTime: '07:00',
+      endTime: '10:00'
+    },
     slotMinTime: '06:00:00',
     slotMaxTime: '12:00:00',
+    slotDuration: '00:30:00',
+    slotLabelInterval: '01:00',
     height: 'auto'
   });
 
