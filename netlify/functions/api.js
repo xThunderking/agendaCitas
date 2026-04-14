@@ -30,9 +30,13 @@ function isWeekday(dateString) {
 }
 
 function mapRegistration(row) {
+  const fullName = `${row.last_name_paterno} ${row.last_name_materno} ${row.first_names}`.trim();
   return {
     id: row.id,
-    full_name: row.full_name,
+    last_name_paterno: row.last_name_paterno,
+    last_name_materno: row.last_name_materno,
+    first_names: row.first_names,
+    full_name: fullName,
     class_date: normalizeDate(row.class_date),
     class_slot: row.class_slot,
     created_at: row.created_at
@@ -55,7 +59,7 @@ function mapDbError(error) {
     return { status: 500, message: "No hay conexion a RDS. Revisa endpoint, puerto y reglas de seguridad." };
   }
   if (code === "ER_DUP_ENTRY") {
-    return { status: 409, message: "Ese nombre ya fue registrado y no puede repetirse." };
+    return { status: 409, message: "Esa persona ya esta registrada en esa misma clase." };
   }
 
   return { status: 500, message: "Error interno del servidor." };
@@ -68,32 +72,34 @@ async function listRegistrations(pool, query) {
     }
 
     const [rows] = await pool.execute(
-      `SELECT id, full_name, class_date, class_slot, created_at
+      `SELECT id, last_name_paterno, last_name_materno, first_names, class_date, class_slot, created_at
        FROM class_registrations
        WHERE class_date = ?
-       ORDER BY class_date, class_slot, full_name`,
+       ORDER BY class_date, class_slot, last_name_paterno, last_name_materno, first_names`,
       [query.date]
     );
     return json(200, { data: rows.map(mapRegistration), capacity: CLASS_CAPACITY, slots: CLASS_SLOTS });
   }
 
   const [rows] = await pool.execute(
-    `SELECT id, full_name, class_date, class_slot, created_at
+    `SELECT id, last_name_paterno, last_name_materno, first_names, class_date, class_slot, created_at
      FROM class_registrations
      WHERE class_date >= CURDATE()
-     ORDER BY class_date, class_slot, full_name`
+     ORDER BY class_date, class_slot, last_name_paterno, last_name_materno, first_names`
   );
 
   return json(200, { data: rows.map(mapRegistration), capacity: CLASS_CAPACITY, slots: CLASS_SLOTS });
 }
 
 async function createRegistration(pool, payload) {
-  const fullName = normalizeName(payload.full_name);
+  const lastNamePaterno = normalizeName(payload.last_name_paterno);
+  const lastNameMaterno = normalizeName(payload.last_name_materno);
+  const firstNames = normalizeName(payload.first_names);
   const classDate = String(payload.class_date || "");
   const classSlot = String(payload.class_slot || "");
 
-  if (fullName.length < 5) {
-    return json(422, { message: "Escribe nombre completo (minimo 5 caracteres)." });
+  if (lastNamePaterno.length < 2 || lastNameMaterno.length < 2 || firstNames.length < 2) {
+    return json(422, { message: "Completa apellido paterno, apellido materno y nombres." });
   }
   if (!isValidDate(classDate)) {
     return json(422, { message: "Selecciona una fecha valida." });
@@ -109,13 +115,19 @@ async function createRegistration(pool, payload) {
   try {
     await connection.beginTransaction();
 
-    const [nameRows] = await connection.execute(
-      "SELECT id FROM class_registrations WHERE full_name = ? LIMIT 1",
-      [fullName]
+    const [duplicateRows] = await connection.execute(
+      `SELECT id FROM class_registrations
+       WHERE class_date = ?
+         AND class_slot = ?
+         AND last_name_paterno = ?
+         AND last_name_materno = ?
+         AND first_names = ?
+       LIMIT 1`,
+      [classDate, classSlot, lastNamePaterno, lastNameMaterno, firstNames]
     );
-    if (nameRows.length) {
+    if (duplicateRows.length) {
       await connection.rollback();
-      return json(409, { message: "Ese nombre ya fue registrado y no puede repetirse." });
+      return json(409, { message: "Esa persona ya esta registrada en esa misma clase." });
     }
 
     const [countRows] = await connection.execute(
@@ -129,8 +141,14 @@ async function createRegistration(pool, payload) {
     }
 
     const [result] = await connection.execute(
-      "INSERT INTO class_registrations (full_name, class_date, class_slot) VALUES (?, ?, ?)",
-      [fullName, classDate, classSlot]
+      `INSERT INTO class_registrations (
+        last_name_paterno,
+        last_name_materno,
+        first_names,
+        class_date,
+        class_slot
+      ) VALUES (?, ?, ?, ?, ?)`,
+      [lastNamePaterno, lastNameMaterno, firstNames, classDate, classSlot]
     );
 
     await connection.commit();

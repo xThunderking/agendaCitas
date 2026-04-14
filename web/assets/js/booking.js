@@ -27,10 +27,17 @@ form?.addEventListener("submit", async (event) => {
   flash.innerHTML = "";
 
   const payload = {
-    full_name: form.full_name.value.trim(),
+    last_name_paterno: form.last_name_paterno.value.trim(),
+    last_name_materno: form.last_name_materno.value.trim(),
+    first_names: form.first_names.value.trim(),
     class_date: form.class_date.value,
     class_slot: form.class_slot.value
   };
+
+  if (payload.last_name_paterno.length < 2 || payload.last_name_materno.length < 2 || payload.first_names.length < 2) {
+    showFlash("Completa apellido paterno, apellido materno y nombres.", "error");
+    return;
+  }
 
   if (!isWeekday(payload.class_date)) {
     showFlash("Solo puedes seleccionar clases de lunes a viernes.", "error");

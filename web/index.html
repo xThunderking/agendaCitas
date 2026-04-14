@@ -32,8 +32,14 @@
         <div id="flash"></div>
 
         <form id="booking-form" class="form">
-          <label for="full_name">Nombre completo</label>
-          <input id="full_name" name="full_name" type="text" maxlength="160" required placeholder="Ejemplo: Maria Perez">
+          <label for="last_name_paterno">Apellido paterno</label>
+          <input id="last_name_paterno" name="last_name_paterno" type="text" maxlength="80" required placeholder="Ejemplo: Hernandez">
+
+          <label for="last_name_materno">Apellido materno</label>
+          <input id="last_name_materno" name="last_name_materno" type="text" maxlength="80" required placeholder="Ejemplo: Lopez">
+
+          <label for="first_names">Nombres</label>
+          <input id="first_names" name="first_names" type="text" maxlength="120" required placeholder="Ejemplo: Maria Fernanda">
 
           <label for="class_date">Dia de clase</label>
           <input id="class_date" name="class_date" type="date" required>
@@ -55,7 +61,8 @@
           <li>Solo dias habiles: lunes a viernes</li>
           <li>Dos horarios disponibles por dia</li>
           <li>Cada clase tiene 30 cupos maximo</li>
-          <li>No se permiten nombres repetidos</li>
+          <li>La misma persona puede inscribirse a las 7 y a las 9</li>
+          <li>No se permite repetir persona en la misma clase</li>
         </ul>
 
         <div class="steps">

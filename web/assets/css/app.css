@@ -304,6 +304,89 @@ select:focus {
     gap: 0.85rem;
 }
 
+.daily-calendar {
+    border: 1px solid #cfe0fb;
+    border-radius: 16px;
+    overflow: hidden;
+    background: linear-gradient(180deg, #ffffff, #f9fcff);
+}
+
+.daily-calendar__header {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.75rem;
+    align-items: center;
+    padding: 0.75rem;
+    background: linear-gradient(180deg, #f4f8ff, #edf4ff);
+    border-bottom: 1px solid #d8e5fb;
+}
+
+.daily-calendar__classes {
+    display: grid;
+    gap: 0.7rem;
+    padding: 0.75rem;
+}
+
+.class-card {
+    border: 1px solid #d2e1f8;
+    border-left: 5px solid #2563eb;
+    border-radius: 14px;
+    background: #fff;
+    overflow: hidden;
+}
+
+.class-card__summary {
+    list-style: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.7rem;
+}
+
+.class-card__summary::-webkit-details-marker {
+    display: none;
+}
+
+.class-card__left {
+    display: grid;
+    gap: 0.18rem;
+}
+
+.class-card__slot {
+    display: inline-flex;
+    width: fit-content;
+    border-radius: 999px;
+    border: 1px solid #cbdcf8;
+    background: #f2f7ff;
+    color: #214593;
+    font-weight: 700;
+    padding: 0.22rem 0.6rem;
+    font-size: 0.78rem;
+}
+
+.class-card__left h3 {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.class-card__stats {
+    text-align: right;
+    display: grid;
+    gap: 0.15rem;
+}
+
+.class-card__stats small {
+    color: #5c7398;
+    font-weight: 600;
+}
+
+.class-card__body {
+    border-top: 1px solid #e0ebfb;
+    padding: 0.72rem;
+}
+
 .agenda-day {
     border: 1px solid #cfe0fb;
     border-radius: 16px;
@@ -578,6 +661,10 @@ select:focus {
 
     .agenda-view {
         gap: 1rem;
+    }
+
+    .daily-calendar__classes {
+        grid-template-columns: 1fr 1fr;
     }
 
     .agenda-day__timeline {
