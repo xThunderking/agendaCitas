@@ -3,205 +3,43 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Agenda Pro Mobile</title>
-
-  <style>
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, sans-serif;
-      background: #f1f5f9;
-    }
-
-    .header {
-      background: #1e40af;
-      color: white;
-      padding: 15px;
-      text-align: center;
-      font-size: 18px;
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
-
-    .week {
-      display: flex;
-      overflow-x: auto;
-      padding: 10px;
-      gap: 10px;
-      background: white;
-      border-bottom: 1px solid #ddd;
-    }
-
-    .day-tab {
-      min-width: 70px;
-      text-align: center;
-      padding: 8px;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-
-    .day-tab.active {
-      background: #2563eb;
-      color: white;
-    }
-
-    .agenda {
-      padding: 10px;
-    }
-
-    .event {
-      background: white;
-      border-left: 5px solid #3b82f6;
-      padding: 12px;
-      border-radius: 10px;
-      margin-bottom: 10px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-      cursor: pointer;
-    }
-
-    .event h4 {
-      margin: 0;
-      font-size: 14px;
-    }
-
-    .event p {
-      margin: 5px 0 0;
-      font-size: 12px;
-      color: #555;
-    }
-
-    .modal {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      background: white;
-      border-radius: 15px 15px 0 0;
-      padding: 20px;
-      box-shadow: 0 -2px 10px rgba(0,0,0,0.2);
-      display: none;
-      max-height: 70%;
-      overflow-y: auto;
-    }
-
-    .modal h3 {
-      margin-top: 0;
-    }
-
-    .overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.4);
-      display: none;
-    }
-  </style>
+  <title>Registros de clases | Agenda Pro</title>
+  <link rel="stylesheet" href="/assets/css/app.css">
 </head>
 <body>
+  <header class="topbar">
+    <div class="topbar__inner">
+      <a class="brand" href="/">Agenda Pro</a>
+    </div>
+  </header>
 
-<div class="header">Agenda Pro</div>
+  <main class="page">
+    <section class="dashboard-hero card card--wide">
+      <div>
+        <p class="eyebrow">Panel de registros</p>
+        <h1>Inscritos por clase</h1>
+        <p>Revisa por dia las dos clases y su cupo actual de participantes.</p>
+      </div>
+    </section>
 
-<div class="week" id="week"></div>
+    <section class="card card--wide">
+      <div id="flash"></div>
 
-<div class="agenda" id="agenda"></div>
+      <form id="filter-form" class="filters filters--agenda">
+        <label for="date">Filtrar por dia</label>
+        <input id="date" name="date" type="date">
+        <button type="submit" class="btn btn--secondary">Filtrar</button>
+        <button class="btn btn--ghost" id="clear-btn" type="button">Limpiar</button>
+      </form>
 
-<div class="overlay" id="overlay" onclick="closeModal()"></div>
+      <div id="registrations-root" class="agenda-view"></div>
+    </section>
+  </main>
 
-<div class="modal" id="modal">
-  <h3 id="modal-title"></h3>
-  <ul id="participants"></ul>
-</div>
+  <footer class="footer">
+    <p>Agenda de Citas - Sistema Web Profesional</p>
+  </footer>
 
-<script>
-  const data = {
-    "Lunes": [
-      { name: "Clase 1", time: "08:00 AM", participants: ["Juan", "Maria"] },
-      { name: "Clase 2", time: "10:00 AM", participants: ["Pedro"] }
-    ],
-    "Martes": [
-      { name: "Clase 1", time: "08:00 AM", participants: ["Ana"] },
-      { name: "Clase 2", time: "10:00 AM", participants: [] }
-    ],
-    "Miércoles": [],
-    "Jueves": [],
-    "Viernes": [],
-    "Sábado": [],
-    "Domingo": []
-  };
-
-  const week = document.getElementById("week");
-  const agenda = document.getElementById("agenda");
-
-  let selectedDay = "Lunes";
-
-  function renderTabs() {
-    week.innerHTML = "";
-    Object.keys(data).forEach(day => {
-      const tab = document.createElement("div");
-      tab.className = "day-tab" + (day === selectedDay ? " active" : "");
-      tab.textContent = day.slice(0,3);
-
-      tab.onclick = () => {
-        selectedDay = day;
-        renderTabs();
-        renderAgenda();
-      };
-
-      week.appendChild(tab);
-    });
-  }
-
-  function renderAgenda() {
-    agenda.innerHTML = "";
-
-    const events = data[selectedDay] || [];
-
-    if (events.length === 0) {
-      agenda.innerHTML = "<p>No hay clases</p>";
-      return;
-    }
-
-    events.forEach(ev => {
-      const div = document.createElement("div");
-      div.className = "event";
-
-      div.innerHTML = `
-        <h4>${ev.name}</h4>
-        <p>${ev.time}</p>
-      `;
-
-      div.onclick = () => openModal(ev);
-
-      agenda.appendChild(div);
-    });
-  }
-
-  function openModal(ev) {
-    document.getElementById("modal-title").textContent = ev.name;
-
-    const list = document.getElementById("participants");
-    list.innerHTML = "";
-
-    ev.participants.forEach(p => {
-      const li = document.createElement("li");
-      li.textContent = p;
-      list.appendChild(li);
-    });
-
-    document.getElementById("modal").style.display = "block";
-    document.getElementById("overlay").style.display = "block";
-  }
-
-  function closeModal() {
-    document.getElementById("modal").style.display = "none";
-    document.getElementById("overlay").style.display = "none";
-  }
-
-  renderTabs();
-  renderAgenda();
-</script>
-
+  <script src="/assets/js/admin.js"></script>
 </body>
 </html>
