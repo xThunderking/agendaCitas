@@ -16,6 +16,10 @@ function showFlash(message, type = "success") {
   flash.innerHTML = `<div class="alert alert--${type}">${message}</div>`;
 }
 
+function todayISO() {
+  return new Date().toISOString().slice(0, 10);
+}
+
 function groupByDate(items) {
   return items.reduce((acc, item) => {
     const dateKey = String(item.appointment_date || "").slice(0, 10);
@@ -127,6 +131,10 @@ async function cancelAppointment(id) {
 filterForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
   flash.innerHTML = "";
+  if (dateInput.value && dateInput.value < todayISO()) {
+    showFlash("Solo se pueden consultar citas de hoy en adelante.", "error");
+    return;
+  }
   try {
     await loadAppointments(dateInput.value);
   } catch (error) {
@@ -151,3 +159,7 @@ root?.addEventListener("click", async (event) => {
 });
 
 loadAppointments().catch((error) => showFlash(error.message, "error"));
+
+if (dateInput) {
+  dateInput.min = todayISO();
+}

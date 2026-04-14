@@ -54,13 +54,15 @@ async function listAppointments(pool, query) {
     }
 
     const [rows] = await pool.execute(
-      "SELECT * FROM appointments WHERE appointment_date = ? ORDER BY appointment_date, appointment_time",
+      "SELECT * FROM appointments WHERE appointment_date = ? AND appointment_date >= CURDATE() ORDER BY appointment_date, appointment_time",
       [query.date]
     );
     return json(200, { data: rows.map(mapAppointment) });
   }
 
-  const [rows] = await pool.execute("SELECT * FROM appointments ORDER BY appointment_date, appointment_time");
+  const [rows] = await pool.execute(
+    "SELECT * FROM appointments WHERE appointment_date >= CURDATE() ORDER BY appointment_date, appointment_time"
+  );
   return json(200, { data: rows.map(mapAppointment) });
 }
 
