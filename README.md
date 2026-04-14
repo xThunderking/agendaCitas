@@ -15,7 +15,7 @@ S3 se usa solo para respaldos, no como base de datos activa.
 - Horarios fijos: `07:00-08:00` y `09:00-10:00`
 - Solo clases de lunes a viernes
 - Capacidad maxima de 30 participantes por clase (fecha + horario)
-- No se permiten nombres repetidos
+- No se permiten nombres completos repetidos en todo el sistema
 - Diseno responsive enfocado en celular
 
 ## Requisitos

@@ -18,5 +18,10 @@ CREATE TABLE class_registrations (
         last_name_paterno,
         last_name_materno,
         first_names
+    ),
+    UNIQUE KEY uq_person_global (
+        last_name_paterno,
+        last_name_materno,
+        first_names
     )
 ) ENGINE=InnoDB;

@@ -59,7 +59,7 @@ function mapDbError(error) {
     return { status: 500, message: "No hay conexion a RDS. Revisa endpoint, puerto y reglas de seguridad." };
   }
   if (code === "ER_DUP_ENTRY") {
-    return { status: 409, message: "Esa persona ya esta registrada en esa misma clase." };
+    return { status: 409, message: "Ese nombre completo ya esta registrado y no puede repetirse." };
   }
 
   return { status: 500, message: "Error interno del servidor." };
@@ -125,6 +125,9 @@ async function createRegistration(pool, payload) {
   if (!CLASS_SLOTS.includes(classSlot)) {
     return json(422, { message: "El horario seleccionado no es valido." });
   }
+  if (classDate < normalizeDate(new Date())) {
+    return json(422, { message: "No se permite registrar clases en fechas pasadas." });
+  }
 
   const connection = await pool.getConnection();
   try {
@@ -132,17 +135,15 @@ async function createRegistration(pool, payload) {
 
     const [duplicateRows] = await connection.execute(
       `SELECT id FROM class_registrations
-       WHERE class_date = ?
-         AND class_slot = ?
-         AND last_name_paterno = ?
+       WHERE last_name_paterno = ?
          AND last_name_materno = ?
          AND first_names = ?
        LIMIT 1`,
-      [classDate, classSlot, lastNamePaterno, lastNameMaterno, firstNames]
+      [lastNamePaterno, lastNameMaterno, firstNames]
     );
     if (duplicateRows.length) {
       await connection.rollback();
-      return json(409, { message: "Esa persona ya esta registrada en esa misma clase." });
+      return json(409, { message: "Ese nombre completo ya esta registrado y no puede repetirse." });
     }
 
     const [countRows] = await connection.execute(
