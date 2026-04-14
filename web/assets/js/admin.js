@@ -50,24 +50,38 @@ async function loadEvents(fetchInfo, successCallback, failureCallback) {
       currentData[item.class_date][item.class_slot].push(item);
     });
 
-    // Crear eventos
+    // Crear eventos para todos los slots en días de semana
     const events = [];
-    Object.keys(currentData).forEach(date => {
-      classSlots.forEach(slot => {
-        const participants = currentData[date][slot] || [];
-        const count = participants.length;
-        events.push({
-          title: `Clase ${slot} (${count}/${classCapacity})`,
-          start: date,
-          allDay: true,
-          extendedProps: {
-            date: date,
-            slot: slot,
-            participants: participants
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    for (let d = new Date(startDate); d < endDate; d.setDate(d.getDate() + 1)) {
+      const dateStr = d.toISOString().slice(0, 10);
+      const day = d.getDay();
+      if (day >= 1 && day <= 5) { // Lunes a Viernes
+        classSlots.forEach(slot => {
+          const participants = currentData[dateStr]?.[slot] || [];
+          const count = participants.length;
+          let startTime, endTime;
+          if (slot === "07:00-08:00") {
+            startTime = 'T07:00:00';
+            endTime = 'T08:00:00';
+          } else if (slot === "09:00-10:00") {
+            startTime = 'T09:00:00';
+            endTime = 'T10:00:00';
           }
+          events.push({
+            title: `Clase ${slot} (${count}/${classCapacity})`,
+            start: dateStr + startTime,
+            end: dateStr + endTime,
+            extendedProps: {
+              date: dateStr,
+              slot: slot,
+              participants: participants
+            }
+          });
         });
-      });
-    });
+      }
+    }
 
     successCallback(events);
   } catch (error) {
@@ -97,20 +111,21 @@ window.onclick = function(event) {
 
 document.addEventListener('DOMContentLoaded', function() {
   const calendar = new FullCalendar.Calendar(calendarEl, {
-    initialView: 'dayGridMonth',
+    initialView: 'timeGridDay',
     locale: 'es',
     headerToolbar: {
       left: 'prev,next today',
       center: 'title',
-      right: 'dayGridMonth,timeGridWeek'
+      right: 'dayGridMonth,timeGridWeek,timeGridDay'
     },
     events: loadEvents,
     eventClick: function(info) {
       const props = info.event.extendedProps;
       showParticipants(props.date, props.slot);
     },
-    dayMaxEvents: true, // allow "more" link when too many events
-    moreLinkClick: 'popover'
+    slotMinTime: '06:00:00',
+    slotMaxTime: '12:00:00',
+    height: 'auto'
   });
 
   calendar.render();
