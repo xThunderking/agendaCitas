@@ -1,6 +1,9 @@
 const { getPool } = require("./_lib/db");
 const { json, parseBody } = require("./_lib/http");
-const { isValidDate, isValidTime, isValidStatus } = require("./_lib/validation");
+const { isValidDate } = require("./_lib/validation");
+
+const CLASS_SLOTS = ["07:00-08:00", "09:00-10:00"];
+const CLASS_CAPACITY = 30;
 
 function normalizePath(path = "") {
   const clean = path.replace(/^\/+|\/+$/g, "");
@@ -9,19 +12,30 @@ function normalizePath(path = "") {
   return apiIndex >= 0 ? parts.slice(apiIndex + 1) : [];
 }
 
-function mapAppointment(row) {
-  const dateValue = row.appointment_date instanceof Date
-    ? row.appointment_date.toISOString().slice(0, 10)
-    : String(row.appointment_date || "").slice(0, 10);
+function normalizeDate(value) {
+  if (value instanceof Date) {
+    return value.toISOString().slice(0, 10);
+  }
+  return String(value || "").slice(0, 10);
+}
 
+function normalizeName(name) {
+  return String(name || "").trim().replace(/\s+/g, " ");
+}
+
+function isWeekday(dateString) {
+  const dt = new Date(`${dateString}T00:00:00`);
+  const day = dt.getDay();
+  return day >= 1 && day <= 5;
+}
+
+function mapRegistration(row) {
   return {
     id: row.id,
-    client_name: row.client_name,
-    appointment_date: dateValue,
-    appointment_time: String(row.appointment_time).slice(0, 5),
-    status: row.status,
-    created_at: row.created_at,
-    updated_at: row.updated_at
+    full_name: row.full_name,
+    class_date: normalizeDate(row.class_date),
+    class_slot: row.class_slot,
+    created_at: row.created_at
   };
 }
 
@@ -32,7 +46,7 @@ function mapDbError(error) {
     return { status: 500, message: "Falta configurar variables de base de datos en Netlify." };
   }
   if (code === "ER_NO_SUCH_TABLE") {
-    return { status: 500, message: "La tabla appointments no existe. Importa el SQL en AWS RDS." };
+    return { status: 500, message: "La tabla class_registrations no existe. Importa el SQL actualizado en AWS RDS." };
   }
   if (code === "ER_ACCESS_DENIED_ERROR") {
     return { status: 500, message: "Usuario o password de RDS incorrectos." };
@@ -41,106 +55,94 @@ function mapDbError(error) {
     return { status: 500, message: "No hay conexion a RDS. Revisa endpoint, puerto y reglas de seguridad." };
   }
   if (code === "ER_DUP_ENTRY") {
-    return { status: 409, message: "Ese horario ya esta ocupado. Elige otro." };
+    return { status: 409, message: "Ese nombre ya fue registrado y no puede repetirse." };
   }
 
   return { status: 500, message: "Error interno del servidor." };
 }
 
-async function listAppointments(pool, query) {
+async function listRegistrations(pool, query) {
   if (query.date) {
     if (!isValidDate(query.date)) {
       return json(422, { message: "La fecha del filtro no es valida." });
     }
 
     const [rows] = await pool.execute(
-      "SELECT * FROM appointments WHERE appointment_date = ? AND appointment_date >= CURDATE() ORDER BY appointment_date, appointment_time",
+      `SELECT id, full_name, class_date, class_slot, created_at
+       FROM class_registrations
+       WHERE class_date = ?
+       ORDER BY class_date, class_slot, full_name`,
       [query.date]
     );
-    return json(200, { data: rows.map(mapAppointment) });
+    return json(200, { data: rows.map(mapRegistration), capacity: CLASS_CAPACITY, slots: CLASS_SLOTS });
   }
 
   const [rows] = await pool.execute(
-    "SELECT * FROM appointments WHERE appointment_date >= CURDATE() ORDER BY appointment_date, appointment_time"
+    `SELECT id, full_name, class_date, class_slot, created_at
+     FROM class_registrations
+     WHERE class_date >= CURDATE()
+     ORDER BY class_date, class_slot, full_name`
   );
-  return json(200, { data: rows.map(mapAppointment) });
+
+  return json(200, { data: rows.map(mapRegistration), capacity: CLASS_CAPACITY, slots: CLASS_SLOTS });
 }
 
-async function createAppointment(pool, payload) {
-  const clientName = String(payload.client_name || "").trim();
-  const appointmentDate = String(payload.appointment_date || "");
-  const appointmentTime = String(payload.appointment_time || "");
+async function createRegistration(pool, payload) {
+  const fullName = normalizeName(payload.full_name);
+  const classDate = String(payload.class_date || "");
+  const classSlot = String(payload.class_slot || "");
 
-  if (clientName.length < 3) {
-    return json(422, { message: "Escribe un nombre valido de al menos 3 caracteres." });
+  if (fullName.length < 5) {
+    return json(422, { message: "Escribe nombre completo (minimo 5 caracteres)." });
   }
-  if (!isValidDate(appointmentDate)) {
+  if (!isValidDate(classDate)) {
     return json(422, { message: "Selecciona una fecha valida." });
   }
-  if (!isValidTime(appointmentTime)) {
-    return json(422, { message: "Selecciona una hora valida." });
+  if (!isWeekday(classDate)) {
+    return json(422, { message: "Solo se permiten clases de lunes a viernes." });
+  }
+  if (!CLASS_SLOTS.includes(classSlot)) {
+    return json(422, { message: "El horario seleccionado no es valido." });
   }
 
+  const connection = await pool.getConnection();
   try {
-    const [result] = await pool.execute(
-      "INSERT INTO appointments (client_name, appointment_date, appointment_time, status) VALUES (?, ?, ?, 'scheduled')",
-      [clientName, appointmentDate, `${appointmentTime}:00`]
+    await connection.beginTransaction();
+
+    const [nameRows] = await connection.execute(
+      "SELECT id FROM class_registrations WHERE full_name = ? LIMIT 1",
+      [fullName]
     );
-    return json(201, { message: "Tu cita se registro correctamente.", id: result.insertId });
-  } catch (error) {
-    console.error(error);
-    const mapped = mapDbError(error);
-    return json(mapped.status, { message: mapped.message });
-  }
-}
-
-async function getAppointment(pool, id) {
-  const [rows] = await pool.execute("SELECT * FROM appointments WHERE id = ? LIMIT 1", [id]);
-  if (!rows.length) {
-    return json(404, { message: "La cita no existe." });
-  }
-  return json(200, { data: mapAppointment(rows[0]) });
-}
-
-async function updateAppointment(pool, id, payload) {
-  const clientName = String(payload.client_name || "").trim();
-  const appointmentDate = String(payload.appointment_date || "");
-  const appointmentTime = String(payload.appointment_time || "");
-  const status = String(payload.status || "scheduled");
-
-  if (id <= 0 || clientName.length < 3 || !isValidDate(appointmentDate) || !isValidTime(appointmentTime)) {
-    return json(422, { message: "Datos invalidos para actualizar la cita." });
-  }
-  if (!isValidStatus(status)) {
-    return json(422, { message: "Estado de cita no valido." });
-  }
-
-  try {
-    const [result] = await pool.execute(
-      "UPDATE appointments SET client_name = ?, appointment_date = ?, appointment_time = ?, status = ? WHERE id = ?",
-      [clientName, appointmentDate, `${appointmentTime}:00`, status, id]
-    );
-    if (!result.affectedRows) {
-      return json(404, { message: "La cita no existe." });
+    if (nameRows.length) {
+      await connection.rollback();
+      return json(409, { message: "Ese nombre ya fue registrado y no puede repetirse." });
     }
-    return json(200, { message: "Cita actualizada correctamente." });
+
+    const [countRows] = await connection.execute(
+      "SELECT COUNT(*) AS total FROM class_registrations WHERE class_date = ? AND class_slot = ? FOR UPDATE",
+      [classDate, classSlot]
+    );
+    const total = Number(countRows[0]?.total || 0);
+    if (total >= CLASS_CAPACITY) {
+      await connection.rollback();
+      return json(409, { message: "Ese grupo ya llego al cupo maximo de 30 participantes." });
+    }
+
+    const [result] = await connection.execute(
+      "INSERT INTO class_registrations (full_name, class_date, class_slot) VALUES (?, ?, ?)",
+      [fullName, classDate, classSlot]
+    );
+
+    await connection.commit();
+    return json(201, { message: "Registro completado correctamente.", id: result.insertId });
   } catch (error) {
+    await connection.rollback();
     console.error(error);
     const mapped = mapDbError(error);
     return json(mapped.status, { message: mapped.message });
+  } finally {
+    connection.release();
   }
-}
-
-async function cancelAppointment(pool, id) {
-  if (id <= 0) {
-    return json(422, { message: "Cita invalida." });
-  }
-
-  const [result] = await pool.execute("UPDATE appointments SET status = 'cancelled' WHERE id = ?", [id]);
-  if (!result.affectedRows) {
-    return json(404, { message: "La cita no existe." });
-  }
-  return json(200, { message: "Cita cancelada exitosamente." });
 }
 
 exports.handler = async (event) => {
@@ -155,37 +157,26 @@ exports.handler = async (event) => {
 
   const segments = normalizePath(event.path);
   const method = event.httpMethod || "GET";
-
-  if (!segments.length) {
-    return json(200, { ok: true, service: "agenda-citas-api" });
-  }
-
-  if (segments[0] !== "appointments") {
-    return json(404, { message: "Ruta no encontrada." });
-  }
-
-  const id = Number(segments[1] || 0);
   const payload = parseBody(event);
 
   if (payload === null) {
     return json(400, { message: "El cuerpo JSON es invalido." });
   }
 
+  if (!segments.length) {
+    return json(200, { ok: true, service: "class-registration-api" });
+  }
+
+  if (segments[0] !== "registrations") {
+    return json(404, { message: "Ruta no encontrada." });
+  }
+
   try {
     if (method === "GET" && segments.length === 1) {
-      return await listAppointments(pool, event.queryStringParameters || {});
+      return await listRegistrations(pool, event.queryStringParameters || {});
     }
     if (method === "POST" && segments.length === 1) {
-      return await createAppointment(pool, payload);
-    }
-    if (method === "GET" && segments.length === 2) {
-      return await getAppointment(pool, id);
-    }
-    if (method === "PUT" && segments.length === 2) {
-      return await updateAppointment(pool, id, payload);
-    }
-    if (method === "POST" && segments.length === 3 && segments[2] === "cancel") {
-      return await cancelAppointment(pool, id);
+      return await createRegistration(pool, payload);
     }
   } catch (error) {
     console.error(error);

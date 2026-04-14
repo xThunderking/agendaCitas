@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Agenda tu cita | Agenda Pro</title>
+  <title>Registro de clases | Agenda Pro</title>
   <link rel="stylesheet" href="/assets/css/app.css">
 </head>
 <body>
@@ -16,48 +16,52 @@
   <main class="page">
     <section class="hero">
       <div class="hero__content card card--wide">
-        <h1>Agenda tu cita en segundos</h1>
-        <p>Selecciona tu nombre, fecha y hora. El sistema bloquea horarios repetidos automaticamente.</p>
+        <h1>Registro de clases</h1>
+        <p>Elige dia y horario de clase (lunes a viernes). Cada grupo acepta maximo 30 participantes.</p>
         <div class="hero-tags">
-          <span>Rapido</span>
-          <span>Seguro</span>
-          <span>Sin cruces de horario</span>
+          <span>Clase 7:00-8:00</span>
+          <span>Clase 9:00-10:00</span>
+          <span>Cupo maximo 30</span>
         </div>
       </div>
     </section>
 
     <section class="section-grid">
       <article class="card">
-        <h2>Formulario de cita</h2>
+        <h2>Formulario de inscripcion</h2>
         <div id="flash"></div>
 
         <form id="booking-form" class="form">
-          <label for="client_name">Nombre completo</label>
-          <input id="client_name" name="client_name" type="text" maxlength="120" required placeholder="Ejemplo: Maria Perez">
+          <label for="full_name">Nombre completo</label>
+          <input id="full_name" name="full_name" type="text" maxlength="160" required placeholder="Ejemplo: Maria Perez">
 
-          <label for="appointment_date">Fecha</label>
-          <input id="appointment_date" name="appointment_date" type="date" required>
+          <label for="class_date">Dia de clase</label>
+          <input id="class_date" name="class_date" type="date" required>
 
-          <label for="appointment_time">Horario</label>
-          <input id="appointment_time" name="appointment_time" type="time" required step="60">
+          <label for="class_slot">Horario de clase</label>
+          <select id="class_slot" name="class_slot" required>
+            <option value="">Selecciona un horario</option>
+            <option value="07:00-08:00">07:00 - 08:00</option>
+            <option value="09:00-10:00">09:00 - 10:00</option>
+          </select>
 
-          <button type="submit" class="btn btn--primary">Registrar cita</button>
+          <button type="submit" class="btn btn--primary">Registrarme</button>
         </form>
       </article>
 
       <aside class="card card--accent">
-        <h3>Experiencia simple</h3>
+        <h3>Reglas del registro</h3>
         <ul class="feature-list">
-          <li>Formulario limpio estilo calendario moderno</li>
-          <li>Diseno adaptado a celular y escritorio</li>
-          <li>Sin duplicidad de horario y fecha</li>
-          <li>Panel admin para gestionar todo</li>
+          <li>Solo dias habiles: lunes a viernes</li>
+          <li>Dos horarios disponibles por dia</li>
+          <li>Cada clase tiene 30 cupos maximo</li>
+          <li>No se permiten nombres repetidos</li>
         </ul>
 
         <div class="steps">
-          <p><strong>1.</strong> Elige fecha</p>
-          <p><strong>2.</strong> Selecciona horario</p>
-          <p><strong>3.</strong> Confirma tu registro</p>
+          <p><strong>1.</strong> Escribe tu nombre completo</p>
+          <p><strong>2.</strong> Elige dia y horario</p>
+          <p><strong>3.</strong> Confirma tu inscripcion</p>
         </div>
       </aside>
     </section>

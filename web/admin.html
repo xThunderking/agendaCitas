@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Panel de citas | Agenda Pro</title>
+  <title>Registros de clases | Agenda Pro</title>
   <link rel="stylesheet" href="/assets/css/app.css">
 </head>
 <body>
@@ -16,9 +16,9 @@
   <main class="page">
     <section class="dashboard-hero card card--wide">
       <div>
-        <p class="eyebrow">Agenda movil</p>
-        <h1>Panel de citas</h1>
-        <p>Vista tipo agenda para gestionar citas de forma rapida desde telefono.</p>
+        <p class="eyebrow">Panel de registros</p>
+        <h1>Inscritos por clase</h1>
+        <p>Revisa por dia las dos clases y su cupo actual de participantes.</p>
       </div>
     </section>
 
@@ -26,10 +26,10 @@
       <div id="flash"></div>
 
       <form id="filter-form" class="filters filters--agenda">
-        <label for="date">Filtrar por fecha</label>
+        <label for="date">Filtrar por dia</label>
         <input id="date" name="date" type="date">
         <button type="submit" class="btn btn--secondary">Filtrar</button>
-        <a class="btn btn--ghost" href="/admin.html">Limpiar</a>
+        <button class="btn btn--ghost" id="clear-btn" type="button">Limpiar</button>
       </form>
 
       <div id="appointments-root" class="agenda-view"></div>

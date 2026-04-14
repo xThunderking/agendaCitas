@@ -413,6 +413,18 @@ select:focus {
     color: #607ca8;
 }
 
+.roster-list {
+    margin: 0.55rem 0 0;
+    padding-left: 1.2rem;
+    color: #2b3f64;
+    display: grid;
+    gap: 0.25rem;
+}
+
+.roster-list li {
+    font-size: 0.92rem;
+}
+
 .agenda-item__actions {
     margin-top: 0.7rem;
     display: grid;

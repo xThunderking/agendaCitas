@@ -2,15 +2,12 @@ const root = document.getElementById("appointments-root");
 const flash = document.getElementById("flash");
 const filterForm = document.getElementById("filter-form");
 const dateInput = document.getElementById("date");
-
-const statusLabel = {
-  scheduled: "Programada",
-  cancelled: "Cancelada",
-  completed: "Completada"
-};
+const clearBtn = document.getElementById("clear-btn");
 
 const weekday = ["Domingo", "Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado"];
 const month = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+const classSlots = ["07:00-08:00", "09:00-10:00"];
+let classCapacity = 30;
 
 function showFlash(message, type = "success") {
   flash.innerHTML = `<div class="alert alert--${type}">${message}</div>`;
@@ -22,13 +19,27 @@ function todayISO() {
 
 function groupByDate(items) {
   return items.reduce((acc, item) => {
-    const dateKey = String(item.appointment_date || "").slice(0, 10);
+    const dateKey = String(item.class_date || "").slice(0, 10);
     if (!acc[dateKey]) {
       acc[dateKey] = [];
     }
     acc[dateKey].push(item);
     return acc;
   }, {});
+}
+
+function groupBySlot(items) {
+  const grouped = {};
+  classSlots.forEach((slot) => {
+    grouped[slot] = [];
+  });
+  items.forEach((item) => {
+    if (!grouped[item.class_slot]) {
+      grouped[item.class_slot] = [];
+    }
+    grouped[item.class_slot].push(item);
+  });
+  return grouped;
 }
 
 function dayHeader(date) {
@@ -55,7 +66,7 @@ function escapeHtml(text) {
 
 function render(items) {
   if (!items.length) {
-    root.innerHTML = `<article class="appointment-card appointment-card--empty"><p>No hay citas registradas para esta vista.</p></article>`;
+    root.innerHTML = `<article class="appointment-card appointment-card--empty"><p>No hay registros para esta vista.</p></article>`;
     return;
   }
 
@@ -64,21 +75,25 @@ function render(items) {
 
   const html = days.map((date) => {
     const h = dayHeader(date);
-    const blocks = grouped[date].map((item) => {
-      const canCancel = item.status === "scheduled";
+    const slots = groupBySlot(grouped[date]);
+    const blocks = classSlots.map((slot) => {
+      const people = slots[slot] || [];
+      const occupied = people.length;
+      const remaining = Math.max(classCapacity - occupied, 0);
+      const list = people.length
+        ? `<ul class="roster-list">${people.map((person) => `<li>${escapeHtml(person.full_name)}</li>`).join("")}</ul>`
+        : `<p class="agenda-item__id">Sin registros en este horario.</p>`;
+
       return `
-        <article class="agenda-item status-accent--${item.status}">
-          <div class="agenda-item__time">${item.appointment_time}</div>
+        <article class="agenda-item status-accent--scheduled">
+          <div class="agenda-item__time">${slot}</div>
           <div class="agenda-item__content">
             <div class="agenda-item__top">
-              <h3>${escapeHtml(item.client_name)}</h3>
-              <span class="status status--${item.status}">${statusLabel[item.status] || "Sin estado"}</span>
+              <h3>Clase ${slot}</h3>
+              <span class="status status--scheduled">${occupied}/${classCapacity}</span>
             </div>
-            <p class="agenda-item__id">Cita #${item.id}</p>
-            <div class="agenda-item__actions">
-              <a class="btn btn--secondary" href="/admin-edit.html?id=${item.id}">Editar</a>
-              ${canCancel ? `<button class="btn btn--danger js-cancel" data-id="${item.id}" type="button">Cancelar</button>` : ""}
-            </div>
+            <p class="agenda-item__id">Ocupados: ${occupied} · Disponibles: ${remaining}</p>
+            ${list}
           </div>
         </article>
       `;
@@ -93,7 +108,7 @@ function render(items) {
           </div>
           <div class="agenda-day__meta">
             <h2>${h.weekday}</h2>
-            <p>${date} - ${grouped[date].length} cita(s)</p>
+            <p>${date} - ${grouped[date].length} registro(s)</p>
           </div>
         </header>
         <div class="agenda-day__timeline">${blocks}</div>
@@ -104,61 +119,42 @@ function render(items) {
   root.innerHTML = html;
 }
 
-async function loadAppointments(date = "") {
+async function loadRegistrations(date = "") {
   const query = date ? `?date=${encodeURIComponent(date)}` : "";
-  const response = await fetch(`/api/appointments${query}`);
+  const response = await fetch(`/api/registrations${query}`);
   const result = await response.json();
   if (!response.ok) {
-    throw new Error(result.message || "No se pudo cargar la agenda.");
+    throw new Error(result.message || "No se pudo cargar los registros.");
   }
+  classCapacity = Number(result.capacity || 30);
   render(result.data || []);
-}
-
-async function cancelAppointment(id) {
-  const response = await fetch(`/api/appointments/${id}/cancel`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: "{}"
-  });
-  const result = await response.json();
-  if (!response.ok) {
-    throw new Error(result.message || "No se pudo cancelar la cita.");
-  }
-  showFlash(result.message || "Cita cancelada exitosamente.", "success");
-  await loadAppointments(dateInput.value);
 }
 
 filterForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
   flash.innerHTML = "";
   if (dateInput.value && dateInput.value < todayISO()) {
-    showFlash("Solo se pueden consultar citas de hoy en adelante.", "error");
+    showFlash("Solo se pueden consultar registros de hoy en adelante.", "error");
     return;
   }
   try {
-    await loadAppointments(dateInput.value);
+    await loadRegistrations(dateInput.value);
   } catch (error) {
     showFlash(error.message, "error");
   }
 });
 
-root?.addEventListener("click", async (event) => {
-  const btn = event.target.closest(".js-cancel");
-  if (!btn) {
-    return;
-  }
-  const id = Number(btn.dataset.id);
-  if (!id || !confirm("Deseas cancelar esta cita?")) {
-    return;
-  }
+clearBtn?.addEventListener("click", async () => {
+  dateInput.value = "";
+  flash.innerHTML = "";
   try {
-    await cancelAppointment(id);
+    await loadRegistrations();
   } catch (error) {
     showFlash(error.message, "error");
   }
 });
 
-loadAppointments().catch((error) => showFlash(error.message, "error"));
+loadRegistrations().catch((error) => showFlash(error.message, "error"));
 
 if (dateInput) {
   dateInput.min = todayISO();

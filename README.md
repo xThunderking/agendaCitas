@@ -1,4 +1,4 @@
-# Agenda de Citas en Netlify + AWS RDS
+# Registro de Clases en Netlify + AWS RDS
 
 Este proyecto ya quedo adaptado para desplegar en Netlify con:
 
@@ -10,11 +10,13 @@ S3 se usa solo para respaldos, no como base de datos activa.
 
 ## Caracteristicas
 
-- Vista publica para registrar cita: `/`
-- Panel administrador libre: `/admin.html`
-- Edicion de cita: `/admin-edit.html?id=ID`
-- Diseno responsive y agenda enfocada en celular
-- Bloqueo de citas duplicadas por fecha/hora
+- Link 1 (formulario): `/`
+- Link 2 (registros): `/admin.html`
+- Horarios fijos: `07:00-08:00` y `09:00-10:00`
+- Solo clases de lunes a viernes
+- Capacidad maxima de 30 participantes por clase (fecha + horario)
+- No se permiten nombres repetidos
+- Diseno responsive enfocado en celular
 
 ## Requisitos
 
@@ -68,11 +70,8 @@ Importa este archivo en tu RDS:
 
 ## Rutas API disponibles
 
-- `GET /api/appointments?date=YYYY-MM-DD`
-- `GET /api/appointments/:id`
-- `POST /api/appointments`
-- `PUT /api/appointments/:id`
-- `POST /api/appointments/:id/cancel`
+- `GET /api/registrations?date=YYYY-MM-DD`
+- `POST /api/registrations`
 
 ## Respaldo en S3 (opcional)
 
