@@ -81,6 +81,21 @@ async function listRegistrations(pool, query) {
     return json(200, { data: rows.map(mapRegistration), capacity: CLASS_CAPACITY, slots: CLASS_SLOTS });
   }
 
+  if (query.start_date && query.end_date) {
+    if (!isValidDate(query.start_date) || !isValidDate(query.end_date)) {
+      return json(422, { message: "Las fechas del rango no son validas." });
+    }
+
+    const [rows] = await pool.execute(
+      `SELECT id, last_name_paterno, last_name_materno, first_names, class_date, class_slot, created_at
+       FROM class_registrations
+       WHERE class_date BETWEEN ? AND ?
+       ORDER BY class_date, class_slot, last_name_paterno, last_name_materno, first_names`,
+      [query.start_date, query.end_date]
+    );
+    return json(200, { data: rows.map(mapRegistration), capacity: CLASS_CAPACITY, slots: CLASS_SLOTS });
+  }
+
   const [rows] = await pool.execute(
     `SELECT id, last_name_paterno, last_name_materno, first_names, class_date, class_slot, created_at
      FROM class_registrations
