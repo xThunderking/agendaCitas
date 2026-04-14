@@ -3,43 +3,172 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Registros de clases | Agenda Pro</title>
-  <link rel="stylesheet" href="/assets/css/app.css">
+  <title>Calendario Semanal | Agenda Pro</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #f4f6f9;
+    }
+
+    .header {
+      background: #1e3a8a;
+      color: white;
+      padding: 15px;
+      text-align: center;
+      font-size: 20px;
+    }
+
+    .calendar {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 10px;
+      padding: 20px;
+    }
+
+    .day {
+      background: white;
+      border-radius: 10px;
+      padding: 10px;
+      min-height: 150px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .day h3 {
+      margin: 0 0 10px;
+      font-size: 14px;
+      color: #333;
+    }
+
+    .event {
+      background: #3b82f6;
+      color: white;
+      padding: 6px;
+      border-radius: 6px;
+      margin-bottom: 5px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .event:hover {
+      background: #2563eb;
+    }
+
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      width: 300px;
+    }
+
+    .close {
+      float: right;
+      cursor: pointer;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
-  <header class="topbar">
-    <div class="topbar__inner">
-      <a class="brand" href="/">Agenda Pro</a>
-    </div>
-  </header>
 
-  <main class="page">
-    <section class="dashboard-hero card card--wide">
-      <div>
-        <p class="eyebrow">Panel de registros</p>
-        <h1>Inscritos por clase</h1>
-        <p>Revisa por dia las dos clases y su cupo actual de participantes.</p>
-      </div>
-    </section>
+<div class="header">Agenda Pro - Calendario Semanal</div>
 
-    <section class="card card--wide">
-      <div id="flash"></div>
+<div class="calendar" id="calendar"></div>
 
-      <form id="filter-form" class="filters filters--agenda">
-        <label for="date">Filtrar por dia</label>
-        <input id="date" name="date" type="date">
-        <button type="submit" class="btn btn--secondary">Filtrar</button>
-        <button class="btn btn--ghost" id="clear-btn" type="button">Limpiar</button>
-      </form>
+<div class="modal" id="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal()">&times;</span>
+    <h3 id="modal-title"></h3>
+    <ul id="participants"></ul>
+  </div>
+</div>
 
-      <div id="registrations-root" class="agenda-view"></div>
-    </section>
-  </main>
+<script>
+  const data = {
+    "Lunes": [
+      { name: "Clase 1", participants: ["Juan", "Maria"] },
+      { name: "Clase 2", participants: ["Pedro"] }
+    ],
+    "Martes": [
+      { name: "Clase 1", participants: ["Ana"] },
+      { name: "Clase 2", participants: [] }
+    ],
+    "Miércoles": [
+      { name: "Clase 1", participants: [] },
+      { name: "Clase 2", participants: [] }
+    ],
+    "Jueves": [
+      { name: "Clase 1", participants: [] },
+      { name: "Clase 2", participants: [] }
+    ],
+    "Viernes": [
+      { name: "Clase 1", participants: [] },
+      { name: "Clase 2", participants: [] }
+    ],
+    "Sábado": [
+      { name: "Clase 1", participants: [] },
+      { name: "Clase 2", participants: [] }
+    ],
+    "Domingo": [
+      { name: "Clase 1", participants: [] },
+      { name: "Clase 2", participants: [] }
+    ]
+  };
 
-  <footer class="footer">
-    <p>Agenda de Citas - Sistema Web Profesional</p>
-  </footer>
+  const calendar = document.getElementById("calendar");
 
-  <script src="/assets/js/admin.js"></script>
+  Object.keys(data).forEach(day => {
+    const dayDiv = document.createElement("div");
+    dayDiv.className = "day";
+
+    const title = document.createElement("h3");
+    title.textContent = day;
+
+    dayDiv.appendChild(title);
+
+    data[day].forEach(event => {
+      const eventDiv = document.createElement("div");
+      eventDiv.className = "event";
+      eventDiv.textContent = event.name;
+
+      eventDiv.onclick = () => openModal(day + " - " + event.name, event.participants);
+
+      dayDiv.appendChild(eventDiv);
+    });
+
+    calendar.appendChild(dayDiv);
+  });
+
+  function openModal(title, participants) {
+    document.getElementById("modal-title").textContent = title;
+    const list = document.getElementById("participants");
+    list.innerHTML = "";
+
+    participants.forEach(p => {
+      const li = document.createElement("li");
+      li.textContent = p;
+      list.appendChild(li);
+    });
+
+    document.getElementById("modal").style.display = "flex";
+  }
+
+  function closeModal() {
+    document.getElementById("modal").style.display = "none";
+  }
+</script>
+
 </body>
 </html>
