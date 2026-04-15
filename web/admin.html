@@ -70,6 +70,9 @@
       <p class="class-roster__eyebrow">Detalle de clase</p>
       <h2 id="modal-title">Selecciona una clase</h2>
       <p id="modal-subtitle">Elige un bloque del calendario para ver sus registrados.</p>
+      <div class="participants-modal__actions">
+        <button type="button" id="export-pdf" class="btn btn--secondary">Generar PDF de asistencia</button>
+      </div>
       <ul id="participants-list" class="participants-list"></ul>
     </div>
   </div>
@@ -78,6 +81,7 @@
     <p>Agenda de Citas - Sistema Web Profesional</p>
   </footer>
 
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <script src="/assets/js/admin.js"></script>
 </body>
 </html>

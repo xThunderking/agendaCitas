@@ -9,6 +9,7 @@ const blockedDateInput = document.getElementById("blocked-date");
 const blockedDaysListEl = document.getElementById("blocked-days-list");
 const participantsModal = document.getElementById("participants-modal");
 const modalCloseBtn = document.getElementById("modal-close");
+const exportPdfBtn = document.getElementById("export-pdf");
 const modalTitle = document.getElementById("modal-title");
 const modalSubtitle = document.getElementById("modal-subtitle");
 const participantsList = document.getElementById("participants-list");
@@ -22,6 +23,8 @@ let autoRefreshId = null;
 let lastAutoRefreshError = "";
 let lastFocusedElement = null;
 let blockedDays = new Set();
+let modalDate = "";
+let modalSlot = "";
 
 const AUTO_REFRESH_MS = 15000;
 
@@ -235,6 +238,8 @@ function renderCards(dateString) {
 function showParticipants(date, slot, options = {}) {
   const openModalNow = options.openModal !== false;
   const participants = currentData[date]?.[slot] || [];
+  modalDate = date;
+  modalSlot = slot;
 
   modalTitle.textContent = `Clase ${slot}`;
   modalSubtitle.textContent = `${prettyDate(date)} • ${participants.length}/${classCapacity} registrados`;
@@ -246,6 +251,86 @@ function showParticipants(date, slot, options = {}) {
   if (openModalNow) {
     openParticipantsModal();
   }
+}
+
+function safeFilePart(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replaceAll(":", "-")
+    .replaceAll(" ", "-")
+    .replaceAll("/", "-");
+}
+
+function generateAttendancePdf() {
+  if (!modalDate || !modalSlot) {
+    showFlash("Selecciona primero una clase para exportar su asistencia.", "error");
+    return;
+  }
+
+  if (!window.jspdf || !window.jspdf.jsPDF) {
+    showFlash("No se pudo cargar el generador de PDF. Intenta recargar la pagina.", "error");
+    return;
+  }
+
+  const participants = currentData[modalDate]?.[modalSlot] || [];
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 14;
+  let y = 16;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.text("Lista de Asistencia", margin, y);
+  y += 7;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(11);
+  doc.text(`Clase: ${modalSlot}`, margin, y);
+  y += 6;
+  doc.text(`Fecha: ${prettyDate(modalDate)}`, margin, y);
+  y += 6;
+  doc.text(`Registrados: ${participants.length}/${classCapacity}`, margin, y);
+  y += 9;
+
+  const tableStartY = y;
+  const rowHeight = 8;
+  const colNumberW = 14;
+  const colNameW = 108;
+  const colSignW = pageWidth - margin * 2 - colNumberW - colNameW;
+
+  doc.setFont("helvetica", "bold");
+  doc.rect(margin, tableStartY, colNumberW, rowHeight);
+  doc.rect(margin + colNumberW, tableStartY, colNameW, rowHeight);
+  doc.rect(margin + colNumberW + colNameW, tableStartY, colSignW, rowHeight);
+  doc.text("#", margin + 5, tableStartY + 5.5);
+  doc.text("Nombre", margin + colNumberW + 2, tableStartY + 5.5);
+  doc.text("Firma", margin + colNumberW + colNameW + 2, tableStartY + 5.5);
+
+  let currentY = tableStartY + rowHeight;
+  doc.setFont("helvetica", "normal");
+
+  const rows = participants.length
+    ? participants.map((p, index) => ({ n: String(index + 1), name: fullName(p) }))
+    : [{ n: "-", name: "Sin participantes registrados" }];
+
+  rows.forEach((row) => {
+    if (currentY + rowHeight > 280) {
+      doc.addPage();
+      currentY = 20;
+    }
+
+    doc.rect(margin, currentY, colNumberW, rowHeight);
+    doc.rect(margin + colNumberW, currentY, colNameW, rowHeight);
+    doc.rect(margin + colNumberW + colNameW, currentY, colSignW, rowHeight);
+    doc.text(row.n, margin + 4, currentY + 5.5);
+    doc.text(row.name, margin + colNumberW + 2, currentY + 5.5);
+    currentY += rowHeight;
+  });
+
+  const fileName = `asistencia-${safeFilePart(modalDate)}-${safeFilePart(modalSlot)}.pdf`;
+  doc.save(fileName);
 }
 
 async function refreshDailyView() {
@@ -460,6 +545,7 @@ document.addEventListener("DOMContentLoaded", function() {
   });
 
   modalCloseBtn?.addEventListener("click", closeParticipantsModal);
+  exportPdfBtn?.addEventListener("click", generateAttendancePdf);
 
   participantsModal?.addEventListener("click", function(event) {
     if (event.target === participantsModal) {

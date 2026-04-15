@@ -966,6 +966,14 @@ select:focus {
     cursor: pointer;
 }
 
+.participants-modal__actions {
+    margin-bottom: 0.65rem;
+}
+
+.participants-modal__actions .btn {
+    width: 100%;
+}
+
 .participants-list {
     margin: 0;
     padding: 0;
@@ -1098,5 +1106,9 @@ select:focus {
 
     .participants-modal__card {
         padding: 1rem;
+    }
+
+    .participants-modal__actions .btn {
+        width: auto;
     }
 }
