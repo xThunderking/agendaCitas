@@ -42,9 +42,23 @@
           <div class="admin-calendar-help">
             <span class="legend legend--filled">Con cupo</span>
             <span class="legend legend--full">Clase llena</span>
+            <span class="legend legend--blocked">Dia sin clases</span>
           </div>
 
           <div id="daily-cards" class="daily-cards" aria-live="polite"></div>
+
+          <section class="blocked-days card card--accent">
+            <h3>Gestion de dias sin clases</h3>
+            <form id="blocked-day-form" class="blocked-days__form">
+              <label for="blocked-date">Fecha a bloquear</label>
+              <input id="blocked-date" name="blocked_date" type="date" required>
+              <button type="submit" class="btn btn--primary">Bloquear dia</button>
+            </form>
+            <div class="blocked-days__list-wrap">
+              <p class="blocked-days__subtitle">Dias bloqueados de la semana visible</p>
+              <ul id="blocked-days-list" class="blocked-days__list"></ul>
+            </div>
+          </section>
         </div>
       </div>
     </section>

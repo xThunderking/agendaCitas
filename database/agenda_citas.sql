@@ -25,3 +25,13 @@ CREATE TABLE class_registrations (
         first_names
     )
 ) ENGINE=InnoDB;
+
+DROP TABLE IF EXISTS blocked_class_days;
+
+CREATE TABLE blocked_class_days (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    class_date DATE NOT NULL,
+    reason VARCHAR(180) NOT NULL DEFAULT 'Dia sin clases',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_blocked_class_date (class_date)
+) ENGINE=InnoDB;

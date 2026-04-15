@@ -4,6 +4,9 @@ const weekDaysEl = document.getElementById("week-days");
 const dailyCardsEl = document.getElementById("daily-cards");
 const prevWeekBtn = document.getElementById("prev-week");
 const nextWeekBtn = document.getElementById("next-week");
+const blockedDayForm = document.getElementById("blocked-day-form");
+const blockedDateInput = document.getElementById("blocked-date");
+const blockedDaysListEl = document.getElementById("blocked-days-list");
 const participantsModal = document.getElementById("participants-modal");
 const modalCloseBtn = document.getElementById("modal-close");
 const modalTitle = document.getElementById("modal-title");
@@ -18,6 +21,7 @@ let activeSlot = "07:00-08:00";
 let autoRefreshId = null;
 let lastAutoRefreshError = "";
 let lastFocusedElement = null;
+let blockedDays = new Set();
 
 const AUTO_REFRESH_MS = 15000;
 
@@ -93,6 +97,29 @@ function classStatusClass(count) {
     return "daily-class-card--high";
   }
   return "daily-class-card--normal";
+}
+
+async function loadBlockedDaysRange(startDate, endDate, options = {}) {
+  const silent = Boolean(options.silent);
+
+  try {
+    const response = await fetch(`/api/blocked-days?start_date=${startDate}&end_date=${endDate}`);
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.message || "No se pudo cargar los dias sin clases.");
+    }
+
+    blockedDays = new Set((result.data || []).map(item => item.class_date));
+  } catch (error) {
+    if (!silent) {
+      showFlash(error.message, "error");
+    }
+  }
+}
+
+function isBlockedDate(dateString) {
+  return blockedDays.has(dateString);
 }
 
 function isModalOpen() {
@@ -176,6 +203,7 @@ async function loadDayData(dateString, options = {}) {
 
 function renderCards(dateString) {
   const weekend = !isWeekday(dateString);
+  const blocked = isBlockedDate(dateString);
   const slotsData = currentData[dateString] || {};
 
   dailyCardsEl.innerHTML = classSlots
@@ -183,18 +211,18 @@ function renderCards(dateString) {
       const participants = slotsData[slot] || [];
       const count = participants.length;
       const isFull = count >= classCapacity;
-      const statusClass = weekend ? "daily-class-card--disabled" : classStatusClass(count);
+      const statusClass = weekend || blocked ? "daily-class-card--disabled" : classStatusClass(count);
       const isActive = slot === activeSlot ? "daily-class-card--active" : "";
       return `
-        <button type="button" class="daily-class-card ${statusClass} ${isActive}" data-slot="${slot}" ${weekend ? "disabled" : ""}>
-          <p class="daily-class-card__hour">Clase ${slot} ${isFull ? '<span class="daily-class-card__badge">CLASE LLENA</span>' : ''}</p>
-          <p class="daily-class-card__count">${count}/${classCapacity} registrados</p>
+        <button type="button" class="daily-class-card ${statusClass} ${isActive}" data-slot="${slot}" ${weekend || blocked ? "disabled" : ""}>
+          <p class="daily-class-card__hour">Clase ${slot} ${isFull ? '<span class="daily-class-card__badge">CLASE LLENA</span>' : ""}</p>
+          <p class="daily-class-card__count">${weekend ? "Fin de semana" : blocked ? "DIA SIN CLASES" : `${count}/${classCapacity} registrados`}</p>
         </button>
       `;
     })
     .join("");
 
-  if (weekend) {
+  if (weekend || blocked) {
     closeParticipantsModal();
     return;
   }
@@ -222,15 +250,31 @@ function showParticipants(date, slot, options = {}) {
 
 async function refreshDailyView() {
   const dateString = dateKey(activeDate);
+  const weekStart = startOfWeek(activeDate);
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+
+  await loadBlockedDaysRange(dateKey(weekStart), dateKey(weekEnd));
   renderWeekDays();
   await loadDayData(dateString);
   renderCards(dateString);
+  renderBlockedDaysList();
+  if (blockedDateInput) {
+    blockedDateInput.value = dateString;
+  }
 }
 
 async function refreshDailyViewSilently() {
   const dateString = dateKey(activeDate);
+  const weekStart = startOfWeek(activeDate);
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+
+  await loadBlockedDaysRange(dateKey(weekStart), dateKey(weekEnd), { silent: true });
   await loadDayData(dateString, { silent: true });
+  renderWeekDays();
   renderCards(dateString);
+  renderBlockedDaysList();
 }
 
 function startAutoRefresh() {
@@ -258,6 +302,7 @@ function renderWeekDays() {
     const dayIso = dateKey(dayDate);
     const isToday = isSameDay(dayDate, today);
     const isSelected = isSameDay(dayDate, selected);
+    const isBlocked = isBlockedDate(dayIso);
     const classes = ["week-day"];
     if (isToday) {
       classes.push("week-day--today");
@@ -265,17 +310,91 @@ function renderWeekDays() {
     if (isSelected) {
       classes.push("week-day--selected");
     }
+    if (isBlocked) {
+      classes.push("week-day--blocked");
+    }
 
     days.push(`
       <button type="button" class="${classes.join(" ")}" data-date="${dayIso}">
         <span class="week-day__name">${weekDayName[dayDate.getDay()]}</span>
         <span class="week-day__number">${String(dayDate.getDate()).padStart(2, "0")}</span>
+        ${isBlocked ? '<span class="week-day__tag">Sin clase</span>' : ""}
       </button>
     `);
   }
 
   weekTitleEl.textContent = weekTitle(dateKey(activeDate));
   weekDaysEl.innerHTML = days.join("");
+}
+
+function renderBlockedDaysList() {
+  if (!blockedDaysListEl) {
+    return;
+  }
+
+  const weekStart = startOfWeek(activeDate);
+  const weekItems = [];
+
+  for (let i = 0; i < 7; i += 1) {
+    const dayDate = new Date(weekStart);
+    dayDate.setDate(weekStart.getDate() + i);
+    const dayIso = dateKey(dayDate);
+    if (blockedDays.has(dayIso)) {
+      weekItems.push(dayIso);
+    }
+  }
+
+  if (!weekItems.length) {
+    blockedDaysListEl.innerHTML = '<li class="blocked-days__empty">No hay dias bloqueados en esta semana.</li>';
+    return;
+  }
+
+  blockedDaysListEl.innerHTML = weekItems
+    .map(dayIso => `
+      <li>
+        <span>${prettyDate(dayIso)}</span>
+        <button type="button" class="btn btn--danger blocked-days__remove" data-date="${dayIso}">Desbloquear</button>
+      </li>
+    `)
+    .join("");
+}
+
+async function blockSelectedDay() {
+  const date = String(blockedDateInput?.value || "");
+  if (!date) {
+    showFlash("Selecciona una fecha para bloquear.", "error");
+    return;
+  }
+
+  const response = await fetch("/api/blocked-days", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ class_date: date, reason: "Dia sin clases" })
+  });
+  const result = await response.json();
+
+  if (!response.ok) {
+    showFlash(result.message || "No se pudo bloquear el dia.", "error");
+    return;
+  }
+
+  showFlash(result.message || "Dia bloqueado correctamente.", "success");
+  await refreshDailyView();
+}
+
+async function unblockDay(date) {
+  const response = await fetch(`/api/blocked-days/${encodeURIComponent(date)}`, {
+    method: "DELETE"
+  });
+  const result = await response.json();
+
+  if (!response.ok) {
+    showFlash(result.message || "No se pudo desbloquear el dia.", "error");
+    return;
+  }
+
+  showFlash(result.message || "Dia desbloqueado correctamente.", "success");
+  await refreshDailyView();
 }
 
 document.addEventListener("DOMContentLoaded", function() {
@@ -319,6 +438,25 @@ document.addEventListener("DOMContentLoaded", function() {
     const dateString = normalizeDateQuery(dateKey(activeDate));
     renderCards(dateString);
     showParticipants(dateString, activeSlot, { openModal: true });
+  });
+
+  blockedDayForm?.addEventListener("submit", async function(event) {
+    event.preventDefault();
+    await blockSelectedDay();
+  });
+
+  blockedDaysListEl?.addEventListener("click", function(event) {
+    const removeBtn = event.target.closest(".blocked-days__remove");
+    if (!removeBtn) {
+      return;
+    }
+
+    const date = removeBtn.dataset.date;
+    if (!date) {
+      return;
+    }
+
+    unblockDay(date);
   });
 
   modalCloseBtn?.addEventListener("click", closeParticipantsModal);

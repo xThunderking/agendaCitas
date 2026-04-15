@@ -34,6 +34,15 @@ function isWeekday(dateString) {
   return day >= 1 && day <= 5;
 }
 
+function mapBlockedDay(row) {
+  return {
+    id: row.id,
+    class_date: normalizeDate(row.class_date),
+    reason: row.reason,
+    created_at: row.created_at
+  };
+}
+
 function mapRegistration(row) {
   const fullName = `${row.last_name_paterno} ${row.last_name_materno} ${row.first_names}`.trim();
   return {
@@ -55,7 +64,7 @@ function mapDbError(error) {
     return { status: 500, message: "Falta configurar variables de base de datos en Netlify." };
   }
   if (code === "ER_NO_SUCH_TABLE") {
-    return { status: 500, message: "La tabla class_registrations no existe. Importa el SQL actualizado en AWS RDS." };
+    return { status: 500, message: "Faltan tablas requeridas (class_registrations o blocked_class_days). Importa el SQL actualizado en AWS RDS." };
   }
   if (code === "ER_ACCESS_DENIED_ERROR") {
     return { status: 500, message: "Usuario o password de RDS incorrectos." };
@@ -189,6 +198,104 @@ async function listRegistrations(pool, query) {
   return json(200, { data: rows.map(mapRegistration), capacity: CLASS_CAPACITY, slots: CLASS_SLOTS });
 }
 
+async function isBlockedDay(pool, dateString) {
+  const [rows] = await pool.execute(
+    "SELECT id FROM blocked_class_days WHERE class_date = ? LIMIT 1",
+    [dateString]
+  );
+  return rows.length > 0;
+}
+
+async function listBlockedDays(pool, query) {
+  if (query.date) {
+    if (!isValidDate(query.date)) {
+      return json(422, { message: "La fecha del filtro no es valida." });
+    }
+
+    const [rows] = await pool.execute(
+      `SELECT id, class_date, reason, created_at
+       FROM blocked_class_days
+       WHERE class_date = ?
+       LIMIT 1`,
+      [query.date]
+    );
+
+    return json(200, {
+      data: rows.map(mapBlockedDay),
+      blocked: rows.length > 0
+    });
+  }
+
+  if (query.start_date && query.end_date) {
+    if (!isValidDate(query.start_date) || !isValidDate(query.end_date)) {
+      return json(422, { message: "Las fechas del rango no son validas." });
+    }
+
+    const [rows] = await pool.execute(
+      `SELECT id, class_date, reason, created_at
+       FROM blocked_class_days
+       WHERE class_date BETWEEN ? AND ?
+       ORDER BY class_date`,
+      [query.start_date, query.end_date]
+    );
+
+    return json(200, { data: rows.map(mapBlockedDay) });
+  }
+
+  const [rows] = await pool.execute(
+    `SELECT id, class_date, reason, created_at
+     FROM blocked_class_days
+     WHERE class_date >= CURDATE()
+     ORDER BY class_date`
+  );
+
+  return json(200, { data: rows.map(mapBlockedDay) });
+}
+
+async function createBlockedDay(pool, payload) {
+  const classDate = String(payload.class_date || "");
+  const reason = normalizeName(payload.reason || "Dia sin clases").slice(0, 180) || "Dia sin clases";
+
+  if (!isValidDate(classDate)) {
+    return json(422, { message: "Selecciona una fecha valida para bloquear." });
+  }
+
+  if (!isWeekday(classDate)) {
+    return json(422, { message: "Solo puedes bloquear dias de lunes a viernes." });
+  }
+
+  try {
+    await pool.execute(
+      "INSERT INTO blocked_class_days (class_date, reason) VALUES (?, ?)",
+      [classDate, reason]
+    );
+    return json(201, { message: "Dia bloqueado correctamente.", class_date: classDate });
+  } catch (error) {
+    if (error?.code === "ER_DUP_ENTRY") {
+      return json(409, { message: "Ese dia ya esta bloqueado como dia sin clases." });
+    }
+    throw error;
+  }
+}
+
+async function deleteBlockedDay(pool, dateParam) {
+  const classDate = String(dateParam || "");
+  if (!isValidDate(classDate)) {
+    return json(422, { message: "La fecha para desbloquear no es valida." });
+  }
+
+  const [result] = await pool.execute(
+    "DELETE FROM blocked_class_days WHERE class_date = ?",
+    [classDate]
+  );
+
+  if (Number(result.affectedRows || 0) === 0) {
+    return json(404, { message: "Ese dia no estaba bloqueado." });
+  }
+
+  return json(200, { message: "Dia desbloqueado correctamente.", class_date: classDate });
+}
+
 async function createRegistration(pool, payload) {
   const lastNamePaterno = normalizeName(payload.last_name_paterno);
   const lastNameMaterno = normalizeName(payload.last_name_materno);
@@ -210,6 +317,10 @@ async function createRegistration(pool, payload) {
   }
   if (classDate < normalizeDate(new Date())) {
     return json(422, { message: "No se permite registrar clases en fechas pasadas." });
+  }
+
+  if (await isBlockedDay(pool, classDate)) {
+    return json(409, { message: "Dia sin clases. No se permiten registros para esa fecha." });
   }
 
   const connection = await pool.getConnection();
@@ -297,22 +408,34 @@ exports.handler = async (event) => {
     return json(200, { ok: true, service: "class-registration-api" });
   }
 
-  if (segments[0] !== "registrations") {
-    return json(404, { message: "Ruta no encontrada." });
-  }
-
   try {
-    if (method === "GET" && segments.length === 1) {
-      return await listRegistrations(pool, event.queryStringParameters || {});
+    if (segments[0] === "registrations") {
+      if (method === "GET" && segments.length === 1) {
+        return await listRegistrations(pool, event.queryStringParameters || {});
+      }
+      if (method === "POST" && segments.length === 1) {
+        return await createRegistration(pool, payload);
+      }
+      return json(405, { message: "Metodo no permitido." });
     }
-    if (method === "POST" && segments.length === 1) {
-      return await createRegistration(pool, payload);
+
+    if (segments[0] === "blocked-days") {
+      if (method === "GET" && segments.length === 1) {
+        return await listBlockedDays(pool, event.queryStringParameters || {});
+      }
+      if (method === "POST" && segments.length === 1) {
+        return await createBlockedDay(pool, payload || {});
+      }
+      if (method === "DELETE" && segments.length === 2) {
+        return await deleteBlockedDay(pool, decodeURIComponent(segments[1]));
+      }
+      return json(405, { message: "Metodo no permitido." });
     }
+
+    return json(404, { message: "Ruta no encontrada." });
   } catch (error) {
     console.error(error);
     const mapped = mapDbError(error);
     return json(mapped.status, { message: mapped.message });
   }
-
-  return json(405, { message: "Metodo no permitido." });
 };

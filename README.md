@@ -79,6 +79,10 @@ Importa este archivo en tu RDS:
 
 - `GET /api/registrations?date=YYYY-MM-DD`
 - `POST /api/registrations`
+- `GET /api/blocked-days?date=YYYY-MM-DD`
+- `GET /api/blocked-days?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD`
+- `POST /api/blocked-days`
+- `DELETE /api/blocked-days/YYYY-MM-DD`
 
 ## Alerta por clase llena
 

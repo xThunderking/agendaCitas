@@ -719,6 +719,18 @@ select:focus {
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
+.week-day--blocked {
+    border-color: #f2c17e;
+    background: #fff4e5;
+}
+
+.week-day__tag {
+    font-size: 0.6rem;
+    font-weight: 800;
+    color: #8f5a12;
+    text-transform: uppercase;
+}
+
 .admin-calendar-help {
     display: flex;
     flex-wrap: wrap;
@@ -744,6 +756,12 @@ select:focus {
     background: #ffe8e8;
     border-color: #f7cdcd;
     color: #a53030;
+}
+
+.legend--blocked {
+    background: #fff1d8;
+    border-color: #f5d39f;
+    color: #8f5a12;
 }
 
 .daily-cards {
@@ -828,6 +846,67 @@ select:focus {
     margin-top: 0.25rem;
     font-size: 0.86rem;
     color: #4c6790;
+}
+
+.blocked-days {
+    border-radius: 14px;
+}
+
+.blocked-days h3 {
+    margin-bottom: 0.75rem;
+}
+
+.blocked-days__form {
+    display: grid;
+    gap: 0.55rem;
+}
+
+.blocked-days__subtitle {
+    margin: 0.9rem 0 0.45rem;
+    font-size: 0.83rem;
+    color: #4f6787;
+    font-weight: 600;
+}
+
+.blocked-days__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 0.5rem;
+}
+
+.blocked-days__list li {
+    border: 1px solid #d7e5fb;
+    background: #fff;
+    border-radius: 12px;
+    padding: 0.55rem;
+    display: grid;
+    gap: 0.45rem;
+}
+
+.blocked-days__empty {
+    justify-content: center;
+    color: #5c7398;
+}
+
+.blocked-days__remove {
+    width: 100%;
+}
+
+.date-status {
+    margin: -0.15rem 0 0.15rem;
+    font-size: 0.84rem;
+    font-weight: 700;
+    min-height: 1.2rem;
+}
+
+.date-status--ok {
+    color: #0f5a3f;
+}
+
+.date-status--error {
+    color: #9b1c28;
 }
 
 .class-roster__eyebrow {
@@ -992,6 +1071,24 @@ select:focus {
 
     .daily-cards {
         grid-template-columns: 1fr 1fr;
+    }
+
+    .blocked-days__form {
+        grid-template-columns: 1fr auto;
+        align-items: end;
+    }
+
+    .blocked-days__form label {
+        grid-column: 1 / -1;
+    }
+
+    .blocked-days__list li {
+        grid-template-columns: 1fr auto;
+        align-items: center;
+    }
+
+    .blocked-days__remove {
+        width: auto;
     }
 
     .participants-modal {
