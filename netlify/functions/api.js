@@ -34,6 +34,40 @@ function isWeekday(dateString) {
   return day >= 1 && day <= 5;
 }
 
+function toLocalDate(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function localDateKey(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function addDays(date, days) {
+  const dt = new Date(date);
+  dt.setDate(dt.getDate() + days);
+  return dt;
+}
+
+function enabledWeekRange(referenceDate = new Date()) {
+  const today = toLocalDate(referenceDate);
+  const day = today.getDay();
+
+  if (day === 6 || day === 0) {
+    const daysToMonday = day === 6 ? 2 : 1;
+    const monday = addDays(today, daysToMonday);
+    const friday = addDays(monday, 4);
+    return { start: localDateKey(monday), end: localDateKey(friday) };
+  }
+
+  const daysFromMonday = day - 1;
+  const monday = addDays(today, -daysFromMonday);
+  const friday = addDays(monday, 4);
+  return { start: localDateKey(monday), end: localDateKey(friday) };
+}
+
 function mapBlockedDay(row) {
   return {
     id: row.id,
@@ -315,8 +349,17 @@ async function createRegistration(pool, payload) {
   if (!CLASS_SLOTS.includes(classSlot)) {
     return json(422, { message: "El horario seleccionado no es valido." });
   }
-  if (classDate < normalizeDate(new Date())) {
+  const { start: enabledStart, end: enabledEnd } = enabledWeekRange(new Date());
+  const today = localDateKey(toLocalDate(new Date()));
+
+  if (classDate < today) {
     return json(422, { message: "No se permite registrar clases en fechas pasadas." });
+  }
+
+  if (classDate < enabledStart || classDate > enabledEnd) {
+    return json(422, {
+      message: `Solo puedes registrarte en la semana habilitada (${enabledStart} a ${enabledEnd}).`
+    });
   }
 
   if (await isBlockedDay(pool, classDate)) {

@@ -5,6 +5,8 @@ const dateStatus = document.getElementById("date-status");
 const submitButton = form?.querySelector("button[type='submit']");
 
 let blockedDateSelected = false;
+let allowedStartDate = "";
+let allowedEndDate = "";
 
 function showFlash(message, type = "success") {
   flash.innerHTML = `<div class="alert alert--${type}">${message}</div>`;
@@ -18,6 +20,44 @@ function isWeekday(dateString) {
   const dt = new Date(`${dateString}T00:00:00`);
   const day = dt.getDay();
   return day >= 1 && day <= 5;
+}
+
+function dateKey(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function startOfDay(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function addDays(date, days) {
+  const dt = new Date(date);
+  dt.setDate(dt.getDate() + days);
+  return dt;
+}
+
+function enabledWeekRange(referenceDate = new Date()) {
+  const today = startOfDay(referenceDate);
+  const day = today.getDay();
+
+  if (day === 6 || day === 0) {
+    const daysToMonday = day === 6 ? 2 : 1;
+    const monday = addDays(today, daysToMonday);
+    const friday = addDays(monday, 4);
+    return { start: dateKey(monday), end: dateKey(friday) };
+  }
+
+  const daysFromMonday = day - 1;
+  const monday = addDays(today, -daysFromMonday);
+  const friday = addDays(monday, 4);
+  return { start: dateKey(monday), end: dateKey(friday) };
+}
+
+function isWithinAllowedRange(dateString) {
+  return Boolean(dateString) && dateString >= allowedStartDate && dateString <= allowedEndDate;
 }
 
 function setDateStatus(message = "", type = "neutral") {
@@ -34,6 +74,13 @@ async function checkBlockedDay(dateString) {
     blockedDateSelected = false;
     submitButton?.removeAttribute("disabled");
     setDateStatus("");
+    return false;
+  }
+
+  if (!isWithinAllowedRange(dateString)) {
+    blockedDateSelected = false;
+    submitButton?.setAttribute("disabled", "disabled");
+    setDateStatus(`Solo se permite agendar del ${allowedStartDate} al ${allowedEndDate}.`, "error");
     return false;
   }
 
@@ -65,9 +112,16 @@ async function checkBlockedDay(dateString) {
 
 if (dateInput) {
   const today = todayISO();
-  dateInput.min = today;
-  dateInput.value = today;
-  checkBlockedDay(today);
+  const range = enabledWeekRange(new Date());
+  allowedStartDate = range.start;
+  allowedEndDate = range.end;
+
+  const initialDate = today > allowedStartDate ? today : allowedStartDate;
+
+  dateInput.min = initialDate;
+  dateInput.max = allowedEndDate;
+  dateInput.value = initialDate;
+  checkBlockedDay(initialDate);
 
   dateInput.addEventListener("change", function() {
     checkBlockedDay(dateInput.value);
@@ -96,6 +150,11 @@ form?.addEventListener("submit", async (event) => {
     return;
   }
 
+  if (!isWithinAllowedRange(payload.class_date)) {
+    showFlash(`Solo puedes registrarte en la semana habilitada (${allowedStartDate} a ${allowedEndDate}).`, "error");
+    return;
+  }
+
   const isBlocked = blockedDateSelected || await checkBlockedDay(payload.class_date);
   if (isBlocked) {
     showFlash("Dia sin clases. Elige otra fecha para registrarte.", "error");
@@ -117,9 +176,10 @@ form?.addEventListener("submit", async (event) => {
 
     showFlash(result.message || "Registro completado correctamente.", "success");
     form.reset();
-    form.class_date.value = todayISO();
-    setDateStatus("");
-    submitButton?.removeAttribute("disabled");
+    const today = todayISO();
+    const resetDate = today > allowedStartDate ? today : allowedStartDate;
+    form.class_date.value = resetDate;
+    await checkBlockedDay(resetDate);
   } catch (_error) {
     showFlash("No se pudo conectar con el servidor.", "error");
   }
