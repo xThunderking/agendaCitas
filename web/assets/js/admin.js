@@ -17,6 +17,7 @@ let activeDate = new Date();
 let activeSlot = "07:00-08:00";
 let autoRefreshId = null;
 let lastAutoRefreshError = "";
+let lastFocusedElement = null;
 
 const AUTO_REFRESH_MS = 15000;
 
@@ -102,16 +103,29 @@ function openParticipantsModal() {
   if (!participantsModal) {
     return;
   }
+
+  lastFocusedElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   participantsModal.classList.add("participants-modal--open");
   participantsModal.setAttribute("aria-hidden", "false");
+  modalCloseBtn?.focus();
 }
 
 function closeParticipantsModal() {
   if (!participantsModal) {
     return;
   }
+
+  const activeEl = document.activeElement;
+  if (activeEl instanceof HTMLElement && participantsModal.contains(activeEl)) {
+    activeEl.blur();
+  }
+
   participantsModal.classList.remove("participants-modal--open");
   participantsModal.setAttribute("aria-hidden", "true");
+
+  if (lastFocusedElement && document.contains(lastFocusedElement)) {
+    lastFocusedElement.focus();
+  }
 }
 
 async function loadDayData(dateString, options = {}) {
