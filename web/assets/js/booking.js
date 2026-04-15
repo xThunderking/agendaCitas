@@ -1,6 +1,7 @@
 const flash = document.getElementById("flash");
 const form = document.getElementById("booking-form");
 const dateInput = document.getElementById("class_date");
+const slotInput = document.getElementById("class_slot");
 const dateStatus = document.getElementById("date-status");
 const submitButton = form?.querySelector("button[type='submit']");
 
@@ -55,6 +56,56 @@ function enabledWeekRange(referenceDate = new Date()) {
   const monday = addDays(today, -daysFromMonday);
   const friday = addDays(monday, 4);
   return { start: dateKey(monday), end: dateKey(friday) };
+}
+
+function minutesNow() {
+  const now = new Date();
+  return now.getHours() * 60 + now.getMinutes();
+}
+
+function slotStartMinutes(slot) {
+  const start = String(slot || "").split("-")[0] || "";
+  const [hh, mm] = start.split(":").map((p) => Number(p));
+  if (!Number.isFinite(hh) || !Number.isFinite(mm)) {
+    return null;
+  }
+  return hh * 60 + mm;
+}
+
+function updateSlotAvailability() {
+  if (!slotInput || !dateInput) {
+    return;
+  }
+
+  const selectedDate = dateInput.value;
+  const today = todayISO();
+  const nowMinutes = minutesNow();
+
+  const options = Array.from(slotInput.options);
+  options.forEach((opt) => {
+    if (!opt.value) {
+      return;
+    }
+
+    const start = slotStartMinutes(opt.value);
+    const disable = selectedDate === today && start !== null && nowMinutes >= start;
+    opt.disabled = disable;
+  });
+
+  if (slotInput.value) {
+    const selected = options.find((opt) => opt.value === slotInput.value);
+    if (selected?.disabled) {
+      slotInput.value = "";
+    }
+  }
+}
+
+function isSlotAlreadyPassedToday(dateString, slot) {
+  if (dateString !== todayISO()) {
+    return false;
+  }
+  const start = slotStartMinutes(slot);
+  return start !== null && minutesNow() >= start;
 }
 
 function isWithinAllowedRange(dateString) {
@@ -173,6 +224,7 @@ async function checkBlockedDay(dateString) {
 
     setDateStatus("Fecha disponible para registro.", "ok");
     submitButton?.removeAttribute("disabled");
+    updateSlotAvailability();
     return false;
   } catch (_error) {
     blockedDateSelected = false;
@@ -202,8 +254,13 @@ if (dateInput) {
 
   dateInput.addEventListener("change", async function() {
     await checkBlockedDay(dateInput.value);
+    updateSlotAvailability();
   });
 }
+
+slotInput?.addEventListener("change", function() {
+  updateSlotAvailability();
+});
 
 form?.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -236,6 +293,12 @@ form?.addEventListener("submit", async (event) => {
     return;
   }
 
+  if (isSlotAlreadyPassedToday(payload.class_date, payload.class_slot)) {
+    showFlash("No puedes registrarte hoy en una clase cuyo horario ya paso.", "error");
+    updateSlotAvailability();
+    return;
+  }
+
   const isBlocked = blockedDateSelected || await checkBlockedDay(payload.class_date);
   if (isBlocked) {
     showFlash("Dia sin clases. Elige otra fecha para registrarte.", "error");
@@ -261,6 +324,7 @@ form?.addEventListener("submit", async (event) => {
     const resetDate = today > allowedStartDate ? today : allowedStartDate;
     renderDateOptions(resetDate);
     await checkBlockedDay(resetDate);
+    updateSlotAvailability();
   } catch (_error) {
     showFlash("No se pudo conectar con el servidor.", "error");
   }

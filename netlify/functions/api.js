@@ -5,6 +5,7 @@ const nodemailer = require("nodemailer");
 
 const CLASS_SLOTS = ["07:00-08:00", "09:00-10:00"];
 const CLASS_CAPACITY = 30;
+const APP_TIMEZONE = "America/Mexico_City";
 const FULL_CLASS_EMAIL_TO = process.env.FULL_CLASS_EMAIL_TO || "21307007@utcgg.edu.mx";
 const SMTP_FROM = process.env.SMTP_FROM || "ignacioreynarayo25@gmail.com";
 
@@ -107,6 +108,38 @@ function enabledWeekRange(referenceDate = new Date()) {
   const monday = addDays(today, -daysFromMonday);
   const friday = addDays(monday, 4);
   return { start: localDateKey(monday), end: localDateKey(friday) };
+}
+
+function currentDateTimeInTimezone(timeZone = APP_TIMEZONE) {
+  const now = new Date();
+  const datePart = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(now);
+
+  const hour = Number(new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hour: "2-digit",
+    hour12: false
+  }).format(now));
+
+  const minute = Number(new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    minute: "2-digit"
+  }).format(now));
+
+  return { date: datePart, minutes: hour * 60 + minute };
+}
+
+function slotStartMinutes(slot) {
+  const start = String(slot || "").split("-")[0] || "";
+  const [hh, mm] = start.split(":").map((p) => Number(p));
+  if (!Number.isFinite(hh) || !Number.isFinite(mm)) {
+    return null;
+  }
+  return hh * 60 + mm;
 }
 
 function mapBlockedDay(row) {
@@ -416,7 +449,8 @@ async function createRegistration(pool, payload) {
     return json(422, { message: "El horario seleccionado no es valido." });
   }
   const { start: enabledStart, end: enabledEnd } = enabledWeekRange(new Date());
-  const today = localDateKey(toLocalDate(new Date()));
+  const tzNow = currentDateTimeInTimezone(APP_TIMEZONE);
+  const today = tzNow.date;
 
   if (classDate < today) {
     return json(422, { message: "No se permite registrar clases en fechas pasadas." });
@@ -426,6 +460,15 @@ async function createRegistration(pool, payload) {
     return json(422, {
       message: `Solo puedes registrarte en la semana habilitada (${enabledStart} a ${enabledEnd}).`
     });
+  }
+
+  if (classDate === today) {
+    const slotStart = slotStartMinutes(classSlot);
+    if (slotStart !== null && tzNow.minutes >= slotStart) {
+      return json(422, {
+        message: "No se puede registrar para una clase de hoy si su horario ya paso."
+      });
+    }
   }
 
   if (await isBlockedDay(pool, classDate)) {
