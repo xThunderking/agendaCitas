@@ -7,6 +7,7 @@ const submitButton = form?.querySelector("button[type='submit']");
 let blockedDateSelected = false;
 let allowedStartDate = "";
 let allowedEndDate = "";
+let blockedDates = new Set();
 
 function showFlash(message, type = "success") {
   flash.innerHTML = `<div class="alert alert--${type}">${message}</div>`;
@@ -69,6 +70,67 @@ function setDateStatus(message = "", type = "neutral") {
   dateStatus.className = `date-status date-status--${type}`;
 }
 
+async function loadBlockedDatesInRange(startDate, endDate) {
+  const response = await fetch(`/api/blocked-days?start_date=${startDate}&end_date=${endDate}`);
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.message || "No se pudieron cargar los dias sin clases.");
+  }
+
+  blockedDates = new Set((result.data || []).map(item => item.class_date));
+}
+
+function listAllowedWeekdays(startDate, endDate) {
+  const days = [];
+  let current = new Date(`${startDate}T00:00:00`);
+  const end = new Date(`${endDate}T00:00:00`);
+
+  while (current <= end) {
+    const iso = dateKey(current);
+    if (isWeekday(iso)) {
+      days.push(iso);
+    }
+    current = addDays(current, 1);
+  }
+
+  return days;
+}
+
+function prettyDate(value) {
+  return new Date(`${value}T00:00:00`).toLocaleDateString("es-MX", {
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+  });
+}
+
+function renderDateOptions(defaultDate) {
+  if (!dateInput) {
+    return;
+  }
+
+  const weekdays = listAllowedWeekdays(allowedStartDate, allowedEndDate);
+
+  dateInput.innerHTML = weekdays
+    .map((day) => {
+      const blocked = blockedDates.has(day);
+      const selected = day === defaultDate ? "selected" : "";
+      const disabled = blocked ? "disabled" : "";
+      const blockedLabel = blocked ? " (Dia sin clases)" : "";
+      return `<option value="${day}" ${selected} ${disabled}>${prettyDate(day)}${blockedLabel}</option>`;
+    })
+    .join("");
+
+  if (!dateInput.value || blockedDates.has(dateInput.value)) {
+    const firstAvailable = weekdays.find((day) => !blockedDates.has(day));
+    if (firstAvailable) {
+      dateInput.value = firstAvailable;
+    }
+  }
+}
+
 async function checkBlockedDay(dateString) {
   if (!dateString) {
     blockedDateSelected = false;
@@ -82,6 +144,13 @@ async function checkBlockedDay(dateString) {
     submitButton?.setAttribute("disabled", "disabled");
     setDateStatus(`Solo se permite agendar del ${allowedStartDate} al ${allowedEndDate}.`, "error");
     return false;
+  }
+
+  if (blockedDates.has(dateString)) {
+    blockedDateSelected = true;
+    submitButton?.setAttribute("disabled", "disabled");
+    setDateStatus("Dia sin clases: esta fecha esta bloqueada.", "error");
+    return true;
   }
 
   try {
@@ -118,13 +187,18 @@ if (dateInput) {
 
   const initialDate = today > allowedStartDate ? today : allowedStartDate;
 
-  dateInput.min = initialDate;
-  dateInput.max = allowedEndDate;
-  dateInput.value = initialDate;
-  checkBlockedDay(initialDate);
+  loadBlockedDatesInRange(allowedStartDate, allowedEndDate)
+    .then(async () => {
+      renderDateOptions(initialDate);
+      await checkBlockedDay(dateInput.value || initialDate);
+    })
+    .catch(() => {
+      setDateStatus("No se pudieron cargar los dias disponibles.", "error");
+      submitButton?.setAttribute("disabled", "disabled");
+    });
 
-  dateInput.addEventListener("change", function() {
-    checkBlockedDay(dateInput.value);
+  dateInput.addEventListener("change", async function() {
+    await checkBlockedDay(dateInput.value);
   });
 }
 
@@ -133,15 +207,13 @@ form?.addEventListener("submit", async (event) => {
   flash.innerHTML = "";
 
   const payload = {
-    last_name_paterno: form.last_name_paterno.value.trim(),
-    last_name_materno: form.last_name_materno.value.trim(),
-    first_names: form.first_names.value.trim(),
+    full_name: form.full_name.value.trim(),
     class_date: form.class_date.value,
     class_slot: form.class_slot.value
   };
 
-  if (payload.last_name_paterno.length < 2 || payload.last_name_materno.length < 2 || payload.first_names.length < 2) {
-    showFlash("Completa apellido paterno, apellido materno y nombres.", "error");
+  if (payload.full_name.length < 5) {
+    showFlash("Escribe tu nombre completo (apellido paterno, materno y nombres).", "error");
     return;
   }
 
@@ -178,7 +250,7 @@ form?.addEventListener("submit", async (event) => {
     form.reset();
     const today = todayISO();
     const resetDate = today > allowedStartDate ? today : allowedStartDate;
-    form.class_date.value = resetDate;
+    renderDateOptions(resetDate);
     await checkBlockedDay(resetDate);
   } catch (_error) {
     showFlash("No se pudo conectar con el servidor.", "error");

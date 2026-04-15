@@ -32,17 +32,11 @@
         <div id="flash"></div>
 
         <form id="booking-form" class="form">
-          <label for="last_name_paterno">Apellido paterno</label>
-          <input id="last_name_paterno" name="last_name_paterno" type="text" maxlength="80" required placeholder="Ejemplo: Hernandez">
-
-          <label for="last_name_materno">Apellido materno</label>
-          <input id="last_name_materno" name="last_name_materno" type="text" maxlength="80" required placeholder="Ejemplo: Lopez">
-
-          <label for="first_names">Nombres</label>
-          <input id="first_names" name="first_names" type="text" maxlength="120" required placeholder="Ejemplo: Maria Fernanda">
+          <label for="full_name">Nombre completo</label>
+          <input id="full_name" name="full_name" type="text" maxlength="180" required placeholder="Ejemplo: Hernandez Lopez Maria Fernanda">
 
           <label for="class_date">Dia de clase</label>
-          <input id="class_date" name="class_date" type="date" required>
+          <select id="class_date" name="class_date" required></select>
           <p id="date-status" class="date-status" aria-live="polite"></p>
 
           <label for="class_slot">Horario de clase</label>

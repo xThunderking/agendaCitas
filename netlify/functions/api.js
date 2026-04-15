@@ -28,6 +28,24 @@ function normalizeName(name) {
   return String(name || "").trim().replace(/\s+/g, " ");
 }
 
+function splitFullName(fullName) {
+  const parts = normalizeName(fullName).split(" ").filter(Boolean);
+
+  if (parts.length < 3) {
+    return null;
+  }
+
+  const lastNamePaterno = parts[0];
+  const lastNameMaterno = parts[1];
+  const firstNames = parts.slice(2).join(" ");
+
+  if (lastNamePaterno.length < 2 || lastNameMaterno.length < 2 || firstNames.length < 2) {
+    return null;
+  }
+
+  return { lastNamePaterno, lastNameMaterno, firstNames };
+}
+
 function isWeekday(dateString) {
   const dt = new Date(`${dateString}T00:00:00`);
   const day = dt.getDay();
@@ -331,11 +349,22 @@ async function deleteBlockedDay(pool, dateParam) {
 }
 
 async function createRegistration(pool, payload) {
-  const lastNamePaterno = normalizeName(payload.last_name_paterno);
-  const lastNameMaterno = normalizeName(payload.last_name_materno);
-  const firstNames = normalizeName(payload.first_names);
+  const fullName = normalizeName(payload.full_name || "");
+  let lastNamePaterno = normalizeName(payload.last_name_paterno);
+  let lastNameMaterno = normalizeName(payload.last_name_materno);
+  let firstNames = normalizeName(payload.first_names);
   const classDate = String(payload.class_date || "");
   const classSlot = String(payload.class_slot || "");
+
+  if ((!lastNamePaterno || !lastNameMaterno || !firstNames) && fullName) {
+    const split = splitFullName(fullName);
+    if (!split) {
+      return json(422, { message: "Escribe tu nombre completo con apellido paterno, apellido materno y nombres." });
+    }
+    lastNamePaterno = split.lastNamePaterno;
+    lastNameMaterno = split.lastNameMaterno;
+    firstNames = split.firstNames;
+  }
 
   if (lastNamePaterno.length < 2 || lastNameMaterno.length < 2 || firstNames.length < 2) {
     return json(422, { message: "Completa apellido paterno, apellido materno y nombres." });
