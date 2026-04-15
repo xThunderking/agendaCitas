@@ -4,8 +4,10 @@ const weekDaysEl = document.getElementById("week-days");
 const dailyCardsEl = document.getElementById("daily-cards");
 const prevWeekBtn = document.getElementById("prev-week");
 const nextWeekBtn = document.getElementById("next-week");
-const rosterTitle = document.getElementById("roster-title");
-const rosterSubtitle = document.getElementById("roster-subtitle");
+const participantsModal = document.getElementById("participants-modal");
+const modalCloseBtn = document.getElementById("modal-close");
+const modalTitle = document.getElementById("modal-title");
+const modalSubtitle = document.getElementById("modal-subtitle");
 const participantsList = document.getElementById("participants-list");
 
 const classSlots = ["07:00-08:00", "09:00-10:00"];
@@ -92,6 +94,26 @@ function classStatusClass(count) {
   return "daily-class-card--normal";
 }
 
+function isModalOpen() {
+  return participantsModal?.classList.contains("participants-modal--open");
+}
+
+function openParticipantsModal() {
+  if (!participantsModal) {
+    return;
+  }
+  participantsModal.classList.add("participants-modal--open");
+  participantsModal.setAttribute("aria-hidden", "false");
+}
+
+function closeParticipantsModal() {
+  if (!participantsModal) {
+    return;
+  }
+  participantsModal.classList.remove("participants-modal--open");
+  participantsModal.setAttribute("aria-hidden", "true");
+}
+
 async function loadDayData(dateString, options = {}) {
   const silent = Boolean(options.silent);
 
@@ -159,23 +181,29 @@ function renderCards(dateString) {
     .join("");
 
   if (weekend) {
-    rosterTitle.textContent = "Sin clases este dia";
-    rosterSubtitle.textContent = `${prettyDate(dateString)} • Solo se imparten clases de lunes a viernes`;
-    participantsList.innerHTML = "<li class=\"participants-list__empty\">No hay registros porque no hay clase en fin de semana.</li>";
+    closeParticipantsModal();
     return;
   }
 
-  showParticipants(dateString, activeSlot);
+  if (isModalOpen()) {
+    showParticipants(dateString, activeSlot, { openModal: false });
+  }
 }
 
-function showParticipants(date, slot) {
+function showParticipants(date, slot, options = {}) {
+  const openModalNow = options.openModal !== false;
   const participants = currentData[date]?.[slot] || [];
-  rosterTitle.textContent = `Clase ${slot}`;
-  rosterSubtitle.textContent = `${prettyDate(date)} • ${participants.length}/${classCapacity} registrados`;
+
+  modalTitle.textContent = `Clase ${slot}`;
+  modalSubtitle.textContent = `${prettyDate(date)} • ${participants.length}/${classCapacity} registrados`;
 
   participantsList.innerHTML = participants.length
     ? participants.map(p => `<li><span>${escapeHtml(fullName(p))}</span></li>`).join("")
     : "<li class=\"participants-list__empty\">Sin participantes registrados.</li>";
+
+  if (openModalNow) {
+    openParticipantsModal();
+  }
 }
 
 async function refreshDailyView() {
@@ -276,6 +304,21 @@ document.addEventListener("DOMContentLoaded", function() {
     activeSlot = slot;
     const dateString = normalizeDateQuery(dateKey(activeDate));
     renderCards(dateString);
+    showParticipants(dateString, activeSlot, { openModal: true });
+  });
+
+  modalCloseBtn?.addEventListener("click", closeParticipantsModal);
+
+  participantsModal?.addEventListener("click", function(event) {
+    if (event.target === participantsModal) {
+      closeParticipantsModal();
+    }
+  });
+
+  document.addEventListener("keydown", function(event) {
+    if (event.key === "Escape") {
+      closeParticipantsModal();
+    }
   });
 
   refreshDailyView();

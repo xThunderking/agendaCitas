@@ -46,16 +46,19 @@
 
           <div id="daily-cards" class="daily-cards" aria-live="polite"></div>
         </div>
-
-        <aside class="class-roster" id="class-roster" aria-live="polite">
-          <p class="class-roster__eyebrow">Detalle de clase</p>
-          <h2 id="roster-title">Selecciona una clase</h2>
-          <p id="roster-subtitle">Elige un bloque del calendario para ver sus registrados.</p>
-          <ul id="participants-list" class="participants-list"></ul>
-        </aside>
       </div>
     </section>
   </main>
+
+  <div id="participants-modal" class="participants-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="participants-modal__card">
+      <button type="button" id="modal-close" class="participants-modal__close" aria-label="Cerrar modal">Cerrar</button>
+      <p class="class-roster__eyebrow">Detalle de clase</p>
+      <h2 id="modal-title">Selecciona una clase</h2>
+      <p id="modal-subtitle">Elige un bloque del calendario para ver sus registrados.</p>
+      <ul id="participants-list" class="participants-list"></ul>
+    </div>
+  </div>
 
   <footer class="footer">
     <p>Agenda de Citas - Sistema Web Profesional</p>
