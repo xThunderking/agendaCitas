@@ -277,6 +277,7 @@ function generateAttendancePdf() {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
 
   const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 14;
   let y = 16;
 
@@ -292,40 +293,56 @@ function generateAttendancePdf() {
   doc.text(`Fecha: ${prettyDate(modalDate)}`, margin, y);
   y += 6;
   doc.text(`Registrados: ${participants.length}/${classCapacity}`, margin, y);
-  y += 9;
+  y += 7;
 
   const tableStartY = y;
-  const rowHeight = 8;
+  const targetRows = 30;
+  const headerRowHeight = 6.5;
   const colNumberW = 14;
   const colNameW = 108;
   const colSignW = pageWidth - margin * 2 - colNumberW - colNameW;
+  const availableRowsHeight = pageHeight - margin - tableStartY - headerRowHeight;
+  const rowHeight = Math.max(5.2, Number((availableRowsHeight / targetRows).toFixed(2)));
 
   doc.setFont("helvetica", "bold");
-  doc.rect(margin, tableStartY, colNumberW, rowHeight);
-  doc.rect(margin + colNumberW, tableStartY, colNameW, rowHeight);
-  doc.rect(margin + colNumberW + colNameW, tableStartY, colSignW, rowHeight);
-  doc.text("#", margin + 5, tableStartY + 5.5);
-  doc.text("Nombre", margin + colNumberW + 2, tableStartY + 5.5);
-  doc.text("Firma", margin + colNumberW + colNameW + 2, tableStartY + 5.5);
+  doc.setFontSize(10);
+  doc.rect(margin, tableStartY, colNumberW, headerRowHeight);
+  doc.rect(margin + colNumberW, tableStartY, colNameW, headerRowHeight);
+  doc.rect(margin + colNumberW + colNameW, tableStartY, colSignW, headerRowHeight);
+  doc.text("#", margin + 5, tableStartY + 4.5);
+  doc.text("Nombre", margin + colNumberW + 2, tableStartY + 4.5);
+  doc.text("Firma", margin + colNumberW + colNameW + 2, tableStartY + 4.5);
 
-  let currentY = tableStartY + rowHeight;
+  let currentY = tableStartY + headerRowHeight;
   doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
 
-  const rows = participants.length
-    ? participants.map((p, index) => ({ n: String(index + 1), name: fullName(p) }))
-    : [{ n: "-", name: "Sin participantes registrados" }];
+  const rows = Array.from({ length: targetRows }, (_, index) => {
+    const participant = participants[index];
+    return {
+      n: String(index + 1),
+      name: participant ? fullName(participant) : ""
+    };
+  });
 
   rows.forEach((row) => {
-    if (currentY + rowHeight > 280) {
-      doc.addPage();
-      currentY = 20;
-    }
-
     doc.rect(margin, currentY, colNumberW, rowHeight);
     doc.rect(margin + colNumberW, currentY, colNameW, rowHeight);
     doc.rect(margin + colNumberW + colNameW, currentY, colSignW, rowHeight);
-    doc.text(row.n, margin + 4, currentY + 5.5);
-    doc.text(row.name, margin + colNumberW + 2, currentY + 5.5);
+    doc.text(row.n, margin + 4, currentY + rowHeight - 1.8);
+
+    if (row.name) {
+      doc.text(row.name, margin + colNumberW + 2, currentY + rowHeight - 1.8);
+    } else {
+      const lineY = currentY + rowHeight - 2.2;
+      doc.line(
+        margin + colNumberW + 2,
+        lineY,
+        margin + colNumberW + colNameW - 2,
+        lineY
+      );
+    }
+
     currentY += rowHeight;
   });
 
