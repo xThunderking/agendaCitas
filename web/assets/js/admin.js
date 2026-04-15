@@ -13,6 +13,10 @@ let classCapacity = 30;
 let currentData = {};
 let activeDate = new Date();
 let activeSlot = "07:00-08:00";
+let autoRefreshId = null;
+let lastAutoRefreshError = "";
+
+const AUTO_REFRESH_MS = 15000;
 
 const weekDayName = ["Dom", "Lun", "Mar", "Mie", "Jue", "Vie", "Sab"];
 
@@ -88,13 +92,20 @@ function classStatusClass(count) {
   return "daily-class-card--normal";
 }
 
-async function loadDayData(dateString) {
+async function loadDayData(dateString, options = {}) {
+  const silent = Boolean(options.silent);
+
   try {
     const response = await fetch(`/api/registrations?date=${dateString}`);
     const result = await response.json();
 
     if (!response.ok) {
       throw new Error(result.message || "No se pudo cargar los registros.");
+    }
+
+    if (silent) {
+      flash.innerHTML = "";
+      lastAutoRefreshError = "";
     }
 
     classCapacity = Number(result.capacity || 30);
@@ -115,7 +126,15 @@ async function loadDayData(dateString) {
       currentData[item.class_date][item.class_slot].push(item);
     });
   } catch (error) {
-    showFlash(error.message, "error");
+    if (!silent) {
+      showFlash(error.message, "error");
+      return;
+    }
+
+    if (lastAutoRefreshError !== error.message) {
+      showFlash(error.message, "error");
+      lastAutoRefreshError = error.message;
+    }
   }
 }
 
@@ -163,6 +182,25 @@ async function refreshDailyView() {
   renderWeekDays();
   await loadDayData(dateString);
   renderCards(dateString);
+}
+
+async function refreshDailyViewSilently() {
+  const dateString = dateKey(activeDate);
+  await loadDayData(dateString, { silent: true });
+  renderCards(dateString);
+}
+
+function startAutoRefresh() {
+  if (autoRefreshId) {
+    clearInterval(autoRefreshId);
+  }
+
+  autoRefreshId = setInterval(() => {
+    if (document.hidden) {
+      return;
+    }
+    refreshDailyViewSilently();
+  }, AUTO_REFRESH_MS);
 }
 
 function renderWeekDays() {
@@ -240,4 +278,11 @@ document.addEventListener("DOMContentLoaded", function() {
   });
 
   refreshDailyView();
+  startAutoRefresh();
+
+  document.addEventListener("visibilitychange", function() {
+    if (!document.hidden) {
+      refreshDailyViewSilently();
+    }
+  });
 });
