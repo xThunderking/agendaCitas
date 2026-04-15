@@ -1,8 +1,9 @@
 const flash = document.getElementById("flash");
-const selectedDateEl = document.getElementById("selected-date");
+const weekTitleEl = document.getElementById("week-title");
+const weekDaysEl = document.getElementById("week-days");
 const dailyCardsEl = document.getElementById("daily-cards");
-const prevDayBtn = document.getElementById("prev-day");
-const nextDayBtn = document.getElementById("next-day");
+const prevWeekBtn = document.getElementById("prev-week");
+const nextWeekBtn = document.getElementById("next-week");
 const rosterTitle = document.getElementById("roster-title");
 const rosterSubtitle = document.getElementById("roster-subtitle");
 const participantsList = document.getElementById("participants-list");
@@ -12,6 +13,8 @@ let classCapacity = 30;
 let currentData = {};
 let activeDate = new Date();
 let activeSlot = "07:00-08:00";
+
+const weekDayName = ["Dom", "Lun", "Mar", "Mie", "Jue", "Vie", "Sab"];
 
 function showFlash(message, type = "success") {
   flash.innerHTML = `<div class="alert alert--${type}">${message}</div>`;
@@ -54,6 +57,25 @@ function isWeekday(dateString) {
 
 function normalizeDateQuery(value) {
   return String(value || "").slice(0, 10);
+}
+
+function startOfWeek(date) {
+  const dt = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const day = dt.getDay();
+  const diffToMonday = day === 0 ? -6 : 1 - day;
+  dt.setDate(dt.getDate() + diffToMonday);
+  return dt;
+}
+
+function isSameDay(a, b) {
+  return dateKey(a) === dateKey(b);
+}
+
+function weekTitle(date) {
+  return new Date(`${date}T00:00:00`).toLocaleDateString("es-MX", {
+    month: "long",
+    year: "numeric"
+  });
 }
 
 function classStatusClass(count) {
@@ -138,19 +160,66 @@ function showParticipants(date, slot) {
 
 async function refreshDailyView() {
   const dateString = dateKey(activeDate);
-  selectedDateEl.textContent = prettyDate(dateString);
+  renderWeekDays();
   await loadDayData(dateString);
   renderCards(dateString);
 }
 
+function renderWeekDays() {
+  const weekStart = startOfWeek(activeDate);
+  const today = new Date();
+  const selected = new Date(activeDate.getFullYear(), activeDate.getMonth(), activeDate.getDate());
+  const days = [];
+
+  for (let i = 0; i < 7; i += 1) {
+    const dayDate = new Date(weekStart);
+    dayDate.setDate(weekStart.getDate() + i);
+    const dayIso = dateKey(dayDate);
+    const isToday = isSameDay(dayDate, today);
+    const isSelected = isSameDay(dayDate, selected);
+    const classes = ["week-day"];
+    if (isToday) {
+      classes.push("week-day--today");
+    }
+    if (isSelected) {
+      classes.push("week-day--selected");
+    }
+
+    days.push(`
+      <button type="button" class="${classes.join(" ")}" data-date="${dayIso}">
+        <span class="week-day__name">${weekDayName[dayDate.getDay()]}</span>
+        <span class="week-day__number">${String(dayDate.getDate()).padStart(2, "0")}</span>
+      </button>
+    `);
+  }
+
+  weekTitleEl.textContent = weekTitle(dateKey(activeDate));
+  weekDaysEl.innerHTML = days.join("");
+}
+
 document.addEventListener("DOMContentLoaded", function() {
-  prevDayBtn?.addEventListener("click", async function() {
-    activeDate.setDate(activeDate.getDate() - 1);
+  prevWeekBtn?.addEventListener("click", async function() {
+    activeDate.setDate(activeDate.getDate() - 7);
     await refreshDailyView();
   });
 
-  nextDayBtn?.addEventListener("click", async function() {
-    activeDate.setDate(activeDate.getDate() + 1);
+  nextWeekBtn?.addEventListener("click", async function() {
+    activeDate.setDate(activeDate.getDate() + 7);
+    await refreshDailyView();
+  });
+
+  weekDaysEl?.addEventListener("click", async function(event) {
+    const dayButton = event.target.closest(".week-day");
+    if (!dayButton) {
+      return;
+    }
+
+    const date = dayButton.dataset.date;
+    if (!date) {
+      return;
+    }
+
+    activeDate = new Date(`${date}T00:00:00`);
     await refreshDailyView();
   });
 

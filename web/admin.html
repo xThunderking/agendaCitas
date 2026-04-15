@@ -27,13 +27,16 @@
 
       <div class="admin-calendar-grid">
         <div class="admin-calendar-main">
-          <div class="day-switcher">
-            <button type="button" id="prev-day" class="btn btn--ghost">Dia anterior</button>
-            <div class="day-switcher__center">
-              <p class="day-switcher__label">Dia seleccionado</p>
-              <h2 id="selected-date">--</h2>
+          <div class="week-picker">
+            <div class="week-picker__top">
+              <button type="button" id="prev-week" class="btn btn--ghost">Semana anterior</button>
+              <div class="week-picker__center">
+                <p class="week-picker__label">Mini calendario semanal</p>
+                <h2 id="week-title">--</h2>
+              </div>
+              <button type="button" id="next-week" class="btn btn--ghost">Semana siguiente</button>
             </div>
-            <button type="button" id="next-day" class="btn btn--ghost">Dia siguiente</button>
+            <div id="week-days" class="week-days" aria-live="polite"></div>
           </div>
 
           <div class="admin-calendar-help">

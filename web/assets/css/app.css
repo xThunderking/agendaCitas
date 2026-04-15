@@ -645,7 +645,7 @@ select:focus {
     gap: 0.75rem;
 }
 
-.day-switcher {
+.week-picker {
     display: grid;
     grid-template-columns: 1fr;
     gap: 0.65rem;
@@ -655,11 +655,16 @@ select:focus {
     padding: 0.75rem;
 }
 
-.day-switcher__center {
+.week-picker__top {
+    display: grid;
+    gap: 0.65rem;
+}
+
+.week-picker__center {
     text-align: center;
 }
 
-.day-switcher__label {
+.week-picker__label {
     margin: 0;
     text-transform: uppercase;
     letter-spacing: 0.08em;
@@ -668,9 +673,49 @@ select:focus {
     font-weight: 700;
 }
 
-.day-switcher__center h2 {
+.week-picker__center h2 {
     margin: 0.22rem 0 0;
     font-size: 1.08rem;
+    text-transform: capitalize;
+}
+
+.week-days {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 0.4rem;
+}
+
+.week-day {
+    border: 1px solid #cfe0fb;
+    border-radius: 12px;
+    background: #ffffff;
+    min-height: 62px;
+    display: grid;
+    place-items: center;
+    gap: 0.1rem;
+    cursor: pointer;
+}
+
+.week-day__name {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #3f5f90;
+}
+
+.week-day__number {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #163c7f;
+}
+
+.week-day--today {
+    border-color: #f59e0b;
+    background: #fff7e8;
+}
+
+.week-day--selected {
+    border-color: #9dbef4;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
 .admin-calendar-help {
@@ -879,7 +924,7 @@ select:focus {
         align-items: start;
     }
 
-    .day-switcher {
+    .week-picker__top {
         grid-template-columns: auto 1fr auto;
         align-items: center;
     }
