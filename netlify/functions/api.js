@@ -1,9 +1,14 @@
 const { getPool } = require("./_lib/db");
 const { json, parseBody } = require("./_lib/http");
 const { isValidDate } = require("./_lib/validation");
+const nodemailer = require("nodemailer");
 
 const CLASS_SLOTS = ["07:00-08:00", "09:00-10:00"];
 const CLASS_CAPACITY = 30;
+const FULL_CLASS_EMAIL_TO = process.env.FULL_CLASS_EMAIL_TO || "21307007@utcgg.edu.mx";
+const SMTP_FROM = process.env.SMTP_FROM || "ignacioreynarayo25@gmail.com";
+
+let mailTransporter;
 
 function normalizePath(path = "") {
   const clean = path.replace(/^\/+|\/+$/g, "");
@@ -63,6 +68,84 @@ function mapDbError(error) {
   }
 
   return { status: 500, message: "Error interno del servidor." };
+}
+
+function createMailer() {
+  if (mailTransporter) {
+    return mailTransporter;
+  }
+
+  const host = process.env.SMTP_HOST || "smtp.gmail.com";
+  const port = Number(process.env.SMTP_PORT || "465");
+  const secure = String(process.env.SMTP_SECURE || "true").toLowerCase() === "true";
+  const user = process.env.SMTP_USER || "";
+  const pass = process.env.SMTP_PASS || "";
+
+  if (!user || !pass) {
+    throw new Error("Faltan variables SMTP_USER o SMTP_PASS para enviar notificaciones de clase llena.");
+  }
+
+  mailTransporter = nodemailer.createTransport({
+    host,
+    port,
+    secure,
+    auth: { user, pass }
+  });
+
+  return mailTransporter;
+}
+
+function participantName(row) {
+  return `${row.last_name_paterno} ${row.last_name_materno} ${row.first_names}`.trim();
+}
+
+async function sendClassFullEmail(pool, classDate, classSlot) {
+  const [rows] = await pool.execute(
+    `SELECT last_name_paterno, last_name_materno, first_names
+     FROM class_registrations
+     WHERE class_date = ? AND class_slot = ?
+     ORDER BY last_name_paterno, last_name_materno, first_names`,
+    [classDate, classSlot]
+  );
+
+  const participants = rows.map(participantName);
+  const classDatePretty = new Date(`${classDate}T00:00:00`).toLocaleDateString("es-MX", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric"
+  });
+
+  const textLines = [
+    "Se completo una clase (30/30).",
+    "",
+    `Fecha: ${classDatePretty} (${classDate})`,
+    `Horario: ${classSlot}`,
+    `Total de participantes: ${participants.length}`,
+    "",
+    "Lista de participantes:",
+    ...participants.map((name, index) => `${index + 1}. ${name}`)
+  ];
+
+  const htmlList = participants
+    .map((name) => `<li>${name.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")}</li>`)
+    .join("");
+
+  const transporter = createMailer();
+  await transporter.sendMail({
+    from: SMTP_FROM,
+    to: FULL_CLASS_EMAIL_TO,
+    subject: `CLASE LLENA ${classDate} ${classSlot}`,
+    text: textLines.join("\n"),
+    html: `
+      <h2>Clase llena (30/30)</h2>
+      <p><strong>Fecha:</strong> ${classDatePretty} (${classDate})</p>
+      <p><strong>Horario:</strong> ${classSlot}</p>
+      <p><strong>Total:</strong> ${participants.length}</p>
+      <h3>Participantes</h3>
+      <ol>${htmlList}</ol>
+    `
+  });
 }
 
 async function listRegistrations(pool, query) {
@@ -130,6 +213,8 @@ async function createRegistration(pool, payload) {
   }
 
   const connection = await pool.getConnection();
+  let notifyClassFilled = false;
+
   try {
     await connection.beginTransaction();
 
@@ -167,7 +252,18 @@ async function createRegistration(pool, payload) {
       [lastNamePaterno, lastNameMaterno, firstNames, classDate, classSlot]
     );
 
+    notifyClassFilled = total + 1 === CLASS_CAPACITY;
+
     await connection.commit();
+
+    if (notifyClassFilled) {
+      try {
+        await sendClassFullEmail(pool, classDate, classSlot);
+      } catch (mailError) {
+        console.error("No se pudo enviar correo de clase llena:", mailError);
+      }
+    }
+
     return json(201, { message: "Registro completado correctamente.", id: result.insertId });
   } catch (error) {
     await connection.rollback();

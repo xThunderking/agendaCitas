@@ -776,6 +776,16 @@ select:focus {
     border-color: #aac5f1;
 }
 
+.daily-class-card--active.daily-class-card--full {
+    box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.2);
+    border-color: #efb0b0;
+}
+
+.daily-class-card--active.daily-class-card--high {
+    box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.2);
+    border-color: #f0c58d;
+}
+
 .daily-class-card--disabled {
     border-left: 6px solid #9ca3af;
     background: #f3f4f6;
@@ -789,9 +799,28 @@ select:focus {
 }
 
 .daily-class-card__hour {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
     font-weight: 800;
     color: #1c3f82;
     font-size: 1rem;
+}
+
+.daily-class-card__badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 0.12rem 0.55rem;
+    font-size: 0.65rem;
+    letter-spacing: 0.04em;
+    font-weight: 800;
+    color: #9f1d1d;
+    background: #fee2e2;
+    border: 1px solid #fecaca;
+    text-transform: uppercase;
+    flex-shrink: 0;
 }
 
 .daily-class-card__count {

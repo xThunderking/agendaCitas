@@ -34,6 +34,13 @@ Configuralas en `Site settings > Environment variables`:
 - `DB_USER` = usuario de RDS
 - `DB_PASSWORD` = password de RDS
 - `DB_SSL` = `false` (o `true` si tu instancia exige SSL)
+- `SMTP_HOST` = `smtp.gmail.com`
+- `SMTP_PORT` = `465`
+- `SMTP_SECURE` = `true`
+- `SMTP_USER` = correo emisor (ej. `ignacioreynarayo25@gmail.com`)
+- `SMTP_PASS` = contrasena de aplicacion del correo emisor
+- `SMTP_FROM` = correo desde donde saldra el aviso
+- `FULL_CLASS_EMAIL_TO` = correo destino para alertas (ej. `21307007@utcgg.edu.mx`)
 
 Tambien tienes una plantilla lista:
 
@@ -72,6 +79,15 @@ Importa este archivo en tu RDS:
 
 - `GET /api/registrations?date=YYYY-MM-DD`
 - `POST /api/registrations`
+
+## Alerta por clase llena
+
+Cuando una clase llega a 30/30 participantes, la API envia automaticamente un correo con:
+
+- Fecha
+- Horario
+- Total de participantes
+- Lista completa de personas registradas
 
 ## Respaldo en S3 (opcional)
 

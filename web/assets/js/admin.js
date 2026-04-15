@@ -146,11 +146,12 @@ function renderCards(dateString) {
     .map(slot => {
       const participants = slotsData[slot] || [];
       const count = participants.length;
+      const isFull = count >= classCapacity;
       const statusClass = weekend ? "daily-class-card--disabled" : classStatusClass(count);
       const isActive = slot === activeSlot ? "daily-class-card--active" : "";
       return `
         <button type="button" class="daily-class-card ${statusClass} ${isActive}" data-slot="${slot}" ${weekend ? "disabled" : ""}>
-          <p class="daily-class-card__hour">Clase ${slot}</p>
+          <p class="daily-class-card__hour">Clase ${slot} ${isFull ? '<span class="daily-class-card__badge">CLASE LLENA</span>' : ''}</p>
           <p class="daily-class-card__count">${count}/${classCapacity} registrados</p>
         </button>
       `;
