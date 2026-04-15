@@ -28,22 +28,45 @@ function normalizeName(name) {
   return String(name || "").trim().replace(/\s+/g, " ");
 }
 
-function splitFullName(fullName) {
-  const parts = normalizeName(fullName).split(" ").filter(Boolean);
-
-  if (parts.length < 3) {
+function splitLastNames(lastNames) {
+  const parts = normalizeName(lastNames).split(" ").filter(Boolean);
+  if (!parts.length) {
     return null;
   }
 
   const lastNamePaterno = parts[0];
-  const lastNameMaterno = parts[1];
-  const firstNames = parts.slice(2).join(" ");
+  const lastNameMaterno = parts.length > 1 ? parts.slice(1).join(" ") : ".";
 
-  if (lastNamePaterno.length < 2 || lastNameMaterno.length < 2 || firstNames.length < 2) {
+  if (lastNamePaterno.length < 2) {
+    return null;
+  }
+
+  return { lastNamePaterno, lastNameMaterno };
+}
+
+function splitFullName(fullName) {
+  const parts = normalizeName(fullName).split(" ").filter(Boolean);
+
+  if (parts.length < 2) {
+    return null;
+  }
+
+  const lastNamePaterno = parts[0];
+  const lastNameMaterno = parts.length > 2 ? parts[1] : ".";
+  const firstNames = parts.length > 2 ? parts.slice(2).join(" ") : parts[1];
+
+  if (lastNamePaterno.length < 2 || firstNames.length < 2) {
     return null;
   }
 
   return { lastNamePaterno, lastNameMaterno, firstNames };
+}
+
+function composeDisplayName(lastNamePaterno, lastNameMaterno, firstNames) {
+  return [lastNamePaterno, lastNameMaterno, firstNames]
+    .map((part) => normalizeName(part))
+    .filter((part) => part && part !== "." && part !== "-")
+    .join(" ");
 }
 
 function isWeekday(dateString) {
@@ -96,7 +119,7 @@ function mapBlockedDay(row) {
 }
 
 function mapRegistration(row) {
-  const fullName = `${row.last_name_paterno} ${row.last_name_materno} ${row.first_names}`.trim();
+  const fullName = composeDisplayName(row.last_name_paterno, row.last_name_materno, row.first_names);
   return {
     id: row.id,
     last_name_paterno: row.last_name_paterno,
@@ -157,7 +180,7 @@ function createMailer() {
 }
 
 function participantName(row) {
-  return `${row.last_name_paterno} ${row.last_name_materno} ${row.first_names}`.trim();
+  return composeDisplayName(row.last_name_paterno, row.last_name_materno, row.first_names);
 }
 
 async function sendClassFullEmail(pool, classDate, classSlot) {
@@ -350,24 +373,38 @@ async function deleteBlockedDay(pool, dateParam) {
 
 async function createRegistration(pool, payload) {
   const fullName = normalizeName(payload.full_name || "");
+  const lastNames = normalizeName(payload.last_names || "");
   let lastNamePaterno = normalizeName(payload.last_name_paterno);
   let lastNameMaterno = normalizeName(payload.last_name_materno);
   let firstNames = normalizeName(payload.first_names);
   const classDate = String(payload.class_date || "");
   const classSlot = String(payload.class_slot || "");
 
+  if ((!lastNamePaterno || !lastNameMaterno) && lastNames) {
+    const splitLast = splitLastNames(lastNames);
+    if (!splitLast) {
+      return json(422, { message: "Escribe al menos un apellido valido." });
+    }
+    lastNamePaterno = splitLast.lastNamePaterno;
+    lastNameMaterno = splitLast.lastNameMaterno;
+  }
+
   if ((!lastNamePaterno || !lastNameMaterno || !firstNames) && fullName) {
     const split = splitFullName(fullName);
     if (!split) {
-      return json(422, { message: "Escribe tu nombre completo con apellido paterno, apellido materno y nombres." });
+      return json(422, { message: "Escribe tu nombre completo correctamente." });
     }
     lastNamePaterno = split.lastNamePaterno;
     lastNameMaterno = split.lastNameMaterno;
     firstNames = split.firstNames;
   }
 
-  if (lastNamePaterno.length < 2 || lastNameMaterno.length < 2 || firstNames.length < 2) {
-    return json(422, { message: "Completa apellido paterno, apellido materno y nombres." });
+  if (lastNamePaterno.length < 2 || firstNames.length < 2) {
+    return json(422, { message: "Completa apellido(s) y nombre(s)." });
+  }
+
+  if (!lastNameMaterno) {
+    lastNameMaterno = ".";
   }
   if (!isValidDate(classDate)) {
     return json(422, { message: "Selecciona una fecha valida." });

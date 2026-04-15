@@ -98,12 +98,15 @@ function listAllowedWeekdays(startDate, endDate) {
 }
 
 function prettyDate(value) {
-  return new Date(`${value}T00:00:00`).toLocaleDateString("es-MX", {
-    weekday: "short",
+  const weekday = new Date(`${value}T00:00:00`).toLocaleDateString("es-MX", {
+    weekday: "long"
+  });
+  const date = new Date(`${value}T00:00:00`).toLocaleDateString("es-MX", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric"
   });
+  return `${weekday} ${date}`;
 }
 
 function renderDateOptions(defaultDate) {
@@ -207,13 +210,19 @@ form?.addEventListener("submit", async (event) => {
   flash.innerHTML = "";
 
   const payload = {
-    full_name: form.full_name.value.trim(),
+    last_names: form.last_names.value.trim(),
+    first_names: form.first_names.value.trim(),
     class_date: form.class_date.value,
     class_slot: form.class_slot.value
   };
 
-  if (payload.full_name.length < 5) {
-    showFlash("Escribe tu nombre completo (apellido paterno, materno y nombres).", "error");
+  if (payload.last_names.length < 2) {
+    showFlash("Escribe al menos un apellido valido.", "error");
+    return;
+  }
+
+  if (payload.first_names.length < 2) {
+    showFlash("Escribe tu nombre o nombres.", "error");
     return;
   }
 
